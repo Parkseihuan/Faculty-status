@@ -2,13 +2,11 @@
  * API 설정
  */
 const API_CONFIG = {
-  // 개발 환경
   development: {
     baseURL: 'http://localhost:3000/api'
   },
-  // 프로덕션 환경
   production: {
-    baseURL: 'https://your-backend-url.onrender.com/api' // 배포 후 실제 URL로 변경
+    baseURL: 'https://faculty-status-backend-2s16.onrender.com/api'
   }
 };
 
