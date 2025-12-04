@@ -1,8 +1,9 @@
-const xlsx = require('xlsx');
+const ExcelJS = require('exceljs');
 
 /**
  * 엑셀 파일을 파싱하여 교원 데이터 추출
  * (기존 reference1의 processData 함수 기반)
+ * 보안: ExcelJS 사용 (xlsx 취약점 대체)
  */
 class ExcelParser {
   constructor() {
@@ -48,14 +49,43 @@ class ExcelParser {
   /**
    * 엑셀 파일 파싱
    */
-  parseExcelFile(filePath) {
+  async parseExcelFile(filePath) {
     try {
-      const workbook = xlsx.readFile(filePath);
-      const sheetName = workbook.SheetNames[0]; // 첫 번째 시트 사용
-      const worksheet = workbook.Sheets[sheetName];
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(filePath);
 
-      // 시트를 JSON으로 변환
-      const data = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+      // 첫 번째 시트 사용
+      const worksheet = workbook.worksheets[0];
+
+      if (!worksheet) {
+        throw new Error('엑셀 파일에 시트가 없습니다.');
+      }
+
+      // 시트를 배열로 변환
+      const data = [];
+      worksheet.eachRow((row, rowNumber) => {
+        const rowData = [];
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          // 셀 값 추출 (날짜 처리 포함)
+          let value = cell.value;
+
+          // 날짜 객체인 경우
+          if (value instanceof Date) {
+            value = this.toISODate(value);
+          }
+          // 수식 결과인 경우
+          else if (cell.type === ExcelJS.ValueType.Formula && cell.result) {
+            value = cell.result;
+          }
+          // 링크인 경우
+          else if (value && typeof value === 'object' && value.text) {
+            value = value.text;
+          }
+
+          rowData.push(value || '');
+        });
+        data.push(rowData);
+      });
 
       if (data.length === 0) {
         throw new Error('엑셀 파일이 비어있습니다.');
