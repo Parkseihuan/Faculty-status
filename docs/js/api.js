@@ -157,6 +157,20 @@ class API {
     this.setToken(null);
   }
 
+  /**
+   * 비밀번호 힌트 조회
+   */
+  async getPasswordHint() {
+    return this.get('/auth/hint');
+  }
+
+  /**
+   * 비밀번호 변경
+   */
+  async changePassword(currentPassword, newPassword) {
+    return this.post('/auth/change-password', { currentPassword, newPassword });
+  }
+
   // === 교원 데이터 API ===
 
   /**

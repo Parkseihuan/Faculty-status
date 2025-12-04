@@ -10,6 +10,7 @@ package-lock.json
 backend/data/*.xlsx
 backend/data/*.xls
 backend/data/uploads/
+backend/data/auth-config.json
 
 # Logs
 *.log

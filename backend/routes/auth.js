@@ -2,9 +2,61 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const fs = require('fs').promises;
+const path = require('path');
+const authMiddleware = require('../middleware/auth');
 
-// 관리자 비밀번호 해시 생성 (최초 1회만 실행)
-// bcrypt.hash('admin123', 10).then(hash => console.log('Admin password hash:', hash));
+// 설정 파일 경로
+const AUTH_CONFIG_PATH = path.join(__dirname, '../data/auth-config.json');
+
+// 비밀번호 힌트 생성 함수
+function generatePasswordHint(password) {
+  if (password.length <= 2) {
+    return '*'.repeat(password.length);
+  }
+  const first = password[0];
+  const last = password[password.length - 1];
+  const middle = '*'.repeat(password.length - 2);
+  return `${first}${middle}${last}`;
+}
+
+// 인증 설정 읽기
+async function readAuthConfig() {
+  try {
+    const data = await fs.readFile(AUTH_CONFIG_PATH, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    // 파일이 없으면 환경변수 사용
+    return {
+      passwordHash: process.env.ADMIN_PASSWORD_HASH ||
+        '$2a$10$XqJ5ZqJ5ZqJ5ZqJ5ZqJ5ZuJ5ZqJ5ZqJ5ZqJ5ZqJ5ZqJ5ZqJ5ZqJ5Z',
+      passwordHint: 'a*******3'
+    };
+  }
+}
+
+// 인증 설정 저장
+async function saveAuthConfig(config) {
+  await fs.writeFile(AUTH_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
+}
+
+/**
+ * GET /api/auth/hint
+ * 비밀번호 힌트 조회 (로그인 전에도 접근 가능)
+ */
+router.get('/hint', async (req, res) => {
+  try {
+    const config = await readAuthConfig();
+    res.json({
+      hint: config.passwordHint || 'a*******3'
+    });
+  } catch (error) {
+    console.error('Get hint error:', error);
+    res.status(500).json({
+      error: '힌트 조회 중 오류가 발생했습니다.'
+    });
+  }
+});
 
 /**
  * POST /api/auth/login
@@ -20,10 +72,9 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // 환경변수에서 해시된 비밀번호 가져오기
-    const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH ||
-      // 기본값: 'admin123'의 해시
-      '$2a$10$XqJ5ZqJ5ZqJ5ZqJ5ZqJ5ZuJ5ZqJ5ZqJ5ZqJ5ZqJ5ZqJ5ZqJ5ZqJ5Z';
+    // 설정 파일에서 해시된 비밀번호 가져오기
+    const config = await readAuthConfig();
+    const adminPasswordHash = config.passwordHash;
 
     // 비밀번호 검증
     const isValid = await bcrypt.compare(password, adminPasswordHash);
@@ -86,6 +137,62 @@ router.post('/verify', (req, res) => {
     res.status(401).json({
       valid: false,
       error: '유효하지 않은 토큰입니다.'
+    });
+  }
+});
+
+/**
+ * POST /api/auth/change-password
+ * 비밀번호 변경 (관리자만 가능)
+ */
+router.post('/change-password', authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        error: '현재 비밀번호와 새 비밀번호를 모두 입력해주세요.'
+      });
+    }
+
+    if (newPassword.length < 4) {
+      return res.status(400).json({
+        error: '새 비밀번호는 최소 4자 이상이어야 합니다.'
+      });
+    }
+
+    // 현재 설정 읽기
+    const config = await readAuthConfig();
+
+    // 현재 비밀번호 검증
+    const isValid = await bcrypt.compare(currentPassword, config.passwordHash);
+
+    if (!isValid) {
+      return res.status(401).json({
+        error: '현재 비밀번호가 올바르지 않습니다.'
+      });
+    }
+
+    // 새 비밀번호 해시 생성
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    const newHint = generatePasswordHint(newPassword);
+
+    // 설정 업데이트
+    config.passwordHash = newPasswordHash;
+    config.passwordHint = newHint;
+
+    await saveAuthConfig(config);
+
+    res.json({
+      success: true,
+      message: '비밀번호가 성공적으로 변경되었습니다.',
+      hint: newHint
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      error: '비밀번호 변경 중 오류가 발생했습니다.'
     });
   }
 });

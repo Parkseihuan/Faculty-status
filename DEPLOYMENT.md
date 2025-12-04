@@ -13,17 +13,13 @@
 2. GitHub 계정과 연동
 3. 이 저장소를 선택
 
-### 2. 관리자 비밀번호 해시 생성
+### 2. 관리자 비밀번호 설정
 
-로컬에서 다음 명령어 실행:
+**기본 비밀번호**: `admin2025` (힌트: `a********5`)
 
-```bash
-cd backend
-npm install
-node -e "const bcrypt = require('bcryptjs'); bcrypt.hash('your-password-here', 10).then(hash => console.log('Hash:', hash));"
-```
+첫 로그인 후 관리자 페이지의 "⚙️ 설정" 탭에서 비밀번호를 변경하세요.
 
-나온 해시 값을 복사해두세요.
+> **참고**: 비밀번호는 `backend/data/auth-config.json` 파일에 저장됩니다. 이 파일은 자동으로 생성되며, Git에 포함되지 않습니다. 배포 시 기본 비밀번호가 설정됩니다.
 
 ### 3. Web Service 생성
 
@@ -47,9 +43,10 @@ node -e "const bcrypt = require('bcryptjs'); bcrypt.hash('your-password-here', 1
 | `NODE_ENV` | `production` |
 | `PORT` | `10000` |
 | `JWT_SECRET` | (랜덤 문자열, 32자 이상 권장) |
-| `ADMIN_PASSWORD_HASH` | (위에서 생성한 해시 값) |
-| `FRONTEND_URL` | `https://parkseihuan.github.io/Faculty-status` |
+| `FRONTEND_URL` | `https://parkseihuan.github.io` |
 | `MAX_FILE_SIZE` | `10` |
+
+> **중요**: `FRONTEND_URL`은 경로 없이 origin만 입력하세요! (`/Faculty-status` 제외)
 
 4. "Create Web Service" 클릭
 
@@ -115,9 +112,10 @@ curl https://your-backend-url.onrender.com/health
 | `NODE_ENV` | 실행 환경 | `production` |
 | `PORT` | 서버 포트 | `10000` |
 | `JWT_SECRET` | JWT 토큰 암호화 키 | `your-super-secret-key-min-32-chars` |
-| `ADMIN_PASSWORD_HASH` | 관리자 비밀번호 (bcrypt 해시) | `$2a$10$...` |
-| `FRONTEND_URL` | CORS 허용 URL | `https://parkseihuan.github.io/Faculty-status` |
+| `FRONTEND_URL` | CORS 허용 Origin (경로 제외!) | `https://parkseihuan.github.io` |
 | `MAX_FILE_SIZE` | 최대 파일 크기 (MB) | `10` |
+
+> **참고**: 비밀번호는 파일 기반으로 관리되므로 `ADMIN_PASSWORD_HASH` 환경변수는 필요하지 않습니다.
 
 ### Frontend
 
@@ -126,9 +124,10 @@ curl https://your-backend-url.onrender.com/health
 ## 🔒 보안 권장사항
 
 1. **JWT_SECRET**: 최소 32자 이상의 랜덤 문자열 사용
-2. **ADMIN_PASSWORD**: 강력한 비밀번호 사용 (대소문자, 숫자, 특수문자 포함)
+2. **ADMIN_PASSWORD**: 첫 로그인 후 즉시 관리자 페이지에서 비밀번호를 변경하세요
 3. **HTTPS**: 항상 HTTPS로 접속 (HTTP는 자동 리다이렉트됨)
-4. **정기적인 비밀번호 변경**: 3-6개월마다 관리자 비밀번호 변경
+4. **정기적인 비밀번호 변경**: 3-6개월마다 관리자 비밀번호 변경 (관리자 페이지 ⚙️ 설정 탭)
+5. **비밀번호 힌트**: 로그인 페이지에 비밀번호 첫 글자와 마지막 글자만 표시됩니다
 
 ## 🐛 문제 해결
 
@@ -147,12 +146,14 @@ curl https://your-backend-url.onrender.com/health
 
 ### CORS 에러가 발생하는 경우
 
-Backend 환경 변수 `FRONTEND_URL`을 정확한 GitHub Pages URL로 설정:
+Backend 환경 변수 `FRONTEND_URL`을 origin만 설정 (경로 제외):
 ```
-https://parkseihuan.github.io/Faculty-status
+https://parkseihuan.github.io
 ```
 
-(끝에 슬래시 `/` 없음)
+**주의**: `/Faculty-status` 경로를 포함하면 CORS 에러가 발생합니다!
+- ✅ 올바름: `https://parkseihuan.github.io`
+- ❌ 잘못됨: `https://parkseihuan.github.io/Faculty-status`
 
 ## 📞 지원
 

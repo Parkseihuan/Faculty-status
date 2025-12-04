@@ -62,9 +62,24 @@ async function init() {
 /**
  * 로그인 모달 표시
  */
-function showLoginModal() {
+async function showLoginModal() {
   loginModal.classList.remove('hidden');
   mainContent.classList.add('hidden');
+
+  // 비밀번호 힌트 로드
+  try {
+    const result = await api.getPasswordHint();
+    const hintElement = document.getElementById('passwordHint');
+    if (hintElement) {
+      hintElement.textContent = `힌트: ${result.hint}`;
+    }
+  } catch (error) {
+    console.error('Failed to load password hint:', error);
+    const hintElement = document.getElementById('passwordHint');
+    if (hintElement) {
+      hintElement.textContent = '힌트를 불러올 수 없습니다.';
+    }
+  }
 }
 
 /**
@@ -520,6 +535,91 @@ async function loadUploadHistory() {
  * 업로드 기록 새로고침
  */
 refreshHistoryBtn.addEventListener('click', loadUploadHistory);
+
+// ===== 비밀번호 변경 =====
+
+/**
+ * 비밀번호 힌트 로드 (설정 탭)
+ */
+async function loadPasswordHintInSettings() {
+  const hintElement = document.getElementById('currentHint');
+  if (!hintElement) return;
+
+  try {
+    const result = await api.getPasswordHint();
+    hintElement.textContent = result.hint;
+  } catch (error) {
+    hintElement.textContent = '힌트를 불러올 수 없습니다.';
+    console.error('Failed to load hint:', error);
+  }
+}
+
+/**
+ * 비밀번호 변경 처리
+ */
+const changePasswordForm = document.getElementById('changePasswordForm');
+if (changePasswordForm) {
+  changePasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const currentPassword = document.getElementById('currentPasswordInput').value;
+    const newPassword = document.getElementById('newPasswordInput').value;
+    const confirmPassword = document.getElementById('confirmPasswordInput').value;
+    const resultElement = document.getElementById('changePasswordResult');
+
+    // 비밀번호 확인
+    if (newPassword !== confirmPassword) {
+      resultElement.classList.remove('hidden');
+      resultElement.className = 'result error';
+      resultElement.innerHTML = `
+        <h3>❌ 오류</h3>
+        <p>새 비밀번호가 일치하지 않습니다.</p>
+      `;
+      return;
+    }
+
+    try {
+      const result = await api.changePassword(currentPassword, newPassword);
+
+      resultElement.classList.remove('hidden');
+      resultElement.className = 'result success';
+      resultElement.innerHTML = `
+        <h3>✅ 성공</h3>
+        <p>${result.message}</p>
+        <p>새 비밀번호 힌트: <strong>${result.hint}</strong></p>
+      `;
+
+      // 폼 초기화
+      changePasswordForm.reset();
+
+      // 힌트 업데이트
+      loadPasswordHintInSettings();
+
+      // 로그인 페이지 힌트도 업데이트 (다음에 로그인할 때 반영됨)
+
+    } catch (error) {
+      resultElement.classList.remove('hidden');
+      resultElement.className = 'result error';
+      resultElement.innerHTML = `
+        <h3>❌ 오류</h3>
+        <p>${error.message || '비밀번호 변경에 실패했습니다.'}</p>
+      `;
+    }
+  });
+}
+
+/**
+ * 탭 전환 시 설정 탭이면 힌트 로드
+ */
+tabBtns.forEach(btn => {
+  const originalClickHandler = btn.onclick;
+  btn.addEventListener('click', () => {
+    const tabName = btn.getAttribute('data-tab');
+    if (tabName === 'settings') {
+      setTimeout(loadPasswordHintInSettings, 100);
+    }
+  });
+});
 
 // 초기화
 init();
