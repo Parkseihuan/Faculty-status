@@ -1,0 +1,1415 @@
+// 시트가 열릴 때마다 커스텀 메뉴를 생성합니다.
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('업무 자동화')
+    .addItem('1. 헤더 추출하여 보기', 'extractAndShowHeaders')
+    .addSeparator()
+    .addItem('2. 데이터 자동 정리하기', 'cleanData')
+    .addSeparator()
+    .addItem('3. 시트 복제 및 열 삭제', 'duplicateAndCleanColumns')
+    .addSeparator()
+    .addItem('4. 시트 변경사항 비교', 'compareSheets')
+    .addToUi();
+}
+
+/**
+ * 2. 시트의 불필요한 부분을 자동으로 정리하는 메인 함수
+ */
+function cleanData() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  
+  let headerRow = findHeaderRowHeuristically(sheet);
+  
+  if (headerRow === -1) {
+    SpreadsheetApp.getUi().alert('헤더로 추정되는 행을 찾을 수 없습니다. 시트 상단 20줄을 확인해주세요.');
+    return;
+  }
+  
+  consolidateMergedHeaders(sheet, headerRow);
+  
+  if (headerRow > 1) {
+    sheet.deleteRows(1, headerRow - 1);
+  }
+  
+  removeEmptyRowsAtBottom(sheet);
+  
+  SpreadsheetApp.getUi().alert('데이터 정리가 완료되었습니다. 병합된 헤더가 1행으로 정리되었습니다.');
+}
+
+/**
+ * 1. 추출된 헤더가 무엇인지 사용자에게 보여주는 함수
+ */
+function extractAndShowHeaders() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const ui = SpreadsheetApp.getUi();
+
+  const headerRowIndex = findHeaderRowHeuristically(sheet);
+
+  if (headerRowIndex === -1) {
+    ui.alert('헤더를 찾을 수 없습니다.');
+    return;
+  }
+  
+  const consolidatedHeaders = getConsolidatedHeaders(sheet, headerRowIndex);
+  const nonEmptyHeaders = consolidatedHeaders.filter(h => h.toString().trim() !== '');
+
+  ui.alert(`자동으로 인식된 헤더 행은 ${headerRowIndex}번째 행입니다.\n\n통합된 헤더 내용:\n${nonEmptyHeaders.join(', ')}`);
+}
+
+/**
+ * 3. 교원현황 시트를 복제하고 특정 열을 삭제하는 함수 (수정됨)
+ */
+function duplicateAndCleanColumns() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sourceSheet = spreadsheet.getSheetByName('교원현황');
+  
+  if (!sourceSheet) {
+    SpreadsheetApp.getUi().alert('교원현황 시트를 찾을 수 없습니다.');
+    return;
+  }
+  
+  const existingSheet = spreadsheet.getSheetByName('교원현황_정리본');
+  if (existingSheet) {
+    spreadsheet.deleteSheet(existingSheet);
+  }
+  
+  const newSheet = sourceSheet.copyTo(spreadsheet);
+  newSheet.setName('교원현황_정리본');
+  
+  const sourceIndex = sourceSheet.getIndex();
+  newSheet.activate();
+  spreadsheet.moveActiveSheet(sourceIndex + 1);
+  
+  const headerRow = findHeaderRowHeuristically(newSheet);
+  if (headerRow !== -1) {
+    consolidateMergedHeaders(newSheet, headerRow);
+    
+    if (headerRow > 1) {
+      newSheet.deleteRows(1, headerRow - 1);
+    }
+    
+    deleteRetiredRows(newSheet);
+    
+    const columnsToDelete = [
+      'No.',
+      '주민등록번호', 
+      '주소', 
+      '우편번호', 
+      '전화', 
+      '종합정보아이디', 
+      '성명(영문)',
+      '전임교원 퇴직일자',
+      '퇴직일자'
+    ];
+    
+    deleteColumnsByHeaderName(newSheet, columnsToDelete);
+    
+    // 새로운 기능들 추가
+    // 1. 대학/소속 컬럼이 모두 빈 행 삭제
+    deleteRowsWithEmptyCollegeAndDepartment(newSheet);
+    
+    // 2. 직렬이 총장, 감독, 시간강사인 행 삭제
+    deleteSpecificPositionRows(newSheet);
+    
+    // 3. 소속 내용을 대학으로 복사 (필요한 경우)
+    copyDepartmentToCollege(newSheet);
+    
+    // 4. 근속연수 계산 및 추가 (두 개의 열로 수정)
+    addServiceYearsColumns(newSheet);
+    
+    removeEmptyRowsAtBottom(newSheet);
+    
+    // 모든 작업이 완료된 후 flush 실행
+    SpreadsheetApp.flush();
+    
+    // 5. 모든 열 너비 자동 맞춤
+    autoResizeAllColumns(newSheet);
+  }
+  
+  SpreadsheetApp.getUi().alert('교원현황 시트가 복제되고 정리되었습니다.\n- 퇴직자 데이터 삭제 완료\n- 불필요한 열 삭제 완료 (주민번호, 주소, 전화, 퇴직일자 등)\n- 대학/소속 빈 행 삭제 완료\n- 총장/감독/시간강사 행 삭제 완료\n- 소속→대학 복사 완료 (노란색 표시)\n- 근속연수 2개 열 추가 완료 (전임교원 최초임용일 기준, 최초임용 시작일 기준)\n- 열 너비 자동 조정 완료\n복제된 시트명: 교원현황_정리본');
+}
+
+/**
+ * 근속연수를 계산하여 맨 오른쪽에 두 개의 열을 추가하는 함수 (수정됨)
+ */
+function addServiceYearsColumns(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  
+  // 디버깅을 위해 헤더 정보 출력
+  console.log('현재 헤더들:', headers);
+  
+  // 전임교원 최초임용일과 최초임용 시작일 컬럼 찾기 (더 유연한 매칭)
+  let fullTimeAppointmentCol = -1;
+  let initialAppointmentCol = -1;
+  
+  for (let i = 0; i < headers.length; i++) {
+    const headerText = headers[i].toString().trim().toLowerCase();
+    
+    // 전임교원 최초임용일 관련 헤더 찾기
+    if ((headerText.includes('전임교원') || headerText.includes('전임')) && 
+        (headerText.includes('최초임용일') || headerText.includes('임용일'))) {
+      fullTimeAppointmentCol = i + 1;
+      console.log('전임교원 최초임용일 컬럼 발견:', headers[i], '위치:', fullTimeAppointmentCol);
+    }
+    // 최초임용 시작일 관련 헤더 찾기
+    else if (headerText.includes('최초임용') && 
+             (headerText.includes('시작일') || headerText.includes('일자'))) {
+      initialAppointmentCol = i + 1;
+      console.log('최초임용 시작일 컬럼 발견:', headers[i], '위치:', initialAppointmentCol);
+    }
+    // 다른 가능한 헤더명들
+    else if (headerText.includes('임용일') && !headerText.includes('퇴직')) {
+      if (fullTimeAppointmentCol === -1) {
+        fullTimeAppointmentCol = i + 1;
+        console.log('임용일 컬럼 발견:', headers[i], '위치:', fullTimeAppointmentCol);
+      }
+    }
+  }
+  
+  console.log('최종 컬럼 위치 - 전임교원:', fullTimeAppointmentCol, '최초임용:', initialAppointmentCol);
+  
+  // 근속연수 헤더 2개 추가
+  const firstNewColumnIndex = sheet.getLastColumn() + 1;
+  const secondNewColumnIndex = firstNewColumnIndex + 1;
+  
+  sheet.getRange(1, firstNewColumnIndex).setValue('근속연수(전임교원 최초임용일 기준)');
+  sheet.getRange(1, secondNewColumnIndex).setValue('근속연수(최초임용 시작일)');
+  
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+  
+  const today = new Date();
+  console.log('오늘 날짜:', today);
+  
+  // 각 행에 대해 근속연수 계산
+  for (let row = 2; row <= lastRow; row++) {
+    // 전임교원 최초임용일 기준 근속연수 계산
+    if (fullTimeAppointmentCol !== -1) {
+      const fullTimeDate = sheet.getRange(row, fullTimeAppointmentCol).getValue();
+      console.log(`행 ${row} 전임교원 날짜:`, fullTimeDate, typeof fullTimeDate);
+      
+      let appointmentDate = null;
+      if (fullTimeDate) {
+        // 문자열인 경우 Date로 변환 시도
+        if (typeof fullTimeDate === 'string') {
+          appointmentDate = parseKoreanDate(fullTimeDate);
+        } else if (fullTimeDate instanceof Date) {
+          appointmentDate = fullTimeDate;
+        }
+      }
+      
+      if (appointmentDate) {
+        const serviceYears = calculateServiceYears(appointmentDate, today);
+        sheet.getRange(row, firstNewColumnIndex).setValue(serviceYears);
+        console.log(`행 ${row} 전임교원 기준 근속연수:`, serviceYears);
+      } else {
+        sheet.getRange(row, firstNewColumnIndex).setValue('');
+      }
+    } else {
+      // 전임교원 최초임용일 컬럼이 없는 경우
+      sheet.getRange(row, firstNewColumnIndex).setValue('해당 없음');
+    }
+    
+    // 최초임용 시작일 기준 근속연수 계산
+    if (initialAppointmentCol !== -1) {
+      const initialDate = sheet.getRange(row, initialAppointmentCol).getValue();
+      console.log(`행 ${row} 최초임용 날짜:`, initialDate, typeof initialDate);
+      
+      let appointmentDate = null;
+      if (initialDate) {
+        // 문자열인 경우 Date로 변환 시도
+        if (typeof initialDate === 'string') {
+          appointmentDate = parseKoreanDate(initialDate);
+        } else if (initialDate instanceof Date) {
+          appointmentDate = initialDate;
+        }
+      }
+      
+      if (appointmentDate) {
+        const serviceYears = calculateServiceYears(appointmentDate, today);
+        sheet.getRange(row, secondNewColumnIndex).setValue(serviceYears);
+        console.log(`행 ${row} 최초임용 시작일 기준 근속연수:`, serviceYears);
+      } else {
+        sheet.getRange(row, secondNewColumnIndex).setValue('');
+      }
+    } else {
+      // 최초임용 시작일 컬럼이 없는 경우
+      sheet.getRange(row, secondNewColumnIndex).setValue('해당 없음');
+    }
+  }
+}
+
+/**
+ * 한국어 날짜 형식을 파싱하는 함수
+ */
+function parseKoreanDate(dateString) {
+  if (!dateString) return null;
+  
+  const str = dateString.toString().trim();
+  
+  // YYYY.MM.DD 형식
+  let match = str.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})/);
+  if (match) {
+    return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+  }
+  
+  // YYYY-MM-DD 형식
+  match = str.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (match) {
+    return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+  }
+  
+  // YYYY/MM/DD 형식
+  match = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if (match) {
+    return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+  }
+  
+  // Date 객체로 변환 시도
+  try {
+    const date = new Date(str);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  } catch (e) {
+    console.log('날짜 파싱 실패:', str);
+  }
+  
+  return null;
+}
+
+/**
+ * 두 날짜 사이의 근속연수를 "?년 ?개월" 형태로 계산하는 함수
+ */
+function calculateServiceYears(startDate, endDate) {
+  if (!startDate || !endDate) return '';
+  
+  let years = endDate.getFullYear() - startDate.getFullYear();
+  let months = endDate.getMonth() - startDate.getMonth();
+  
+  // 월이 음수인 경우 연도에서 1을 빼고 월에 12를 더함
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+  
+  // 일자를 고려한 보정
+  if (endDate.getDate() < startDate.getDate()) {
+    months--;
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+  }
+  
+  // 결과 포맷팅
+  let result = '';
+  if (years > 0) {
+    result += years + '년';
+  }
+  if (months > 0) {
+    result += (result ? ' ' : '') + months + '개월';
+  }
+  
+  // 0년 0개월인 경우
+  if (!result) {
+    result = '0개월';
+  }
+  
+  return result;
+}
+
+/**
+ * 모든 열의 너비를 자동으로 맞추는 함수
+ */
+function autoResizeAllColumns(sheet) {
+  const lastColumn = sheet.getLastColumn();
+  const lastRow = sheet.getLastRow();
+  
+  if (lastColumn > 0 && lastRow > 0) {
+    // 시트를 활성화
+    sheet.activate();
+    SpreadsheetApp.flush();
+    
+    // 헤더 가져오기
+    const headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+    
+    // 각 열에 대해 처리
+    for (let col = 1; col <= lastColumn; col++) {
+      const headerName = headers[col - 1];
+      
+      try {
+        // 먼저 기본 자동 조정 시도
+        sheet.autoResizeColumn(col);
+        
+        // 현재 너비 확인
+        let currentWidth = sheet.getColumnWidth(col);
+        
+        // 특정 열에 대한 최소 너비 설정
+        if (headerName === '대학' || headerName === '소속') {
+          // 대학, 소속 열은 최소 150픽셀
+          if (currentWidth < 150) {
+            sheet.setColumnWidth(col, 150);
+          }
+        } else if (headerName === '성명' || headerName === '성명(한글)') {
+          // 성명 열은 최소 100픽셀
+          if (currentWidth < 100) {
+            sheet.setColumnWidth(col, 100);
+          }
+        } else if (headerName === '비고') {
+          // 비고 열은 최소 200픽셀
+          if (currentWidth < 200) {
+            sheet.setColumnWidth(col, 200);
+          }
+        } else if (headerName.includes('근속연수')) {
+          // 근속연수 열들은 최소 180픽셀
+          if (currentWidth < 180) {
+            sheet.setColumnWidth(col, 180);
+          }
+        }
+        
+        // 그래도 너비가 너무 좁으면 내용 기반으로 조정
+        currentWidth = sheet.getColumnWidth(col);
+        if (currentWidth < 80) {
+          // 해당 열의 최대 문자 길이 확인
+          const columnData = sheet.getRange(1, col, lastRow, 1).getValues();
+          let maxLength = 0;
+          
+          for (let row = 0; row < columnData.length; row++) {
+            if (columnData[row][0]) {
+              const cellText = columnData[row][0].toString();
+              // 한글은 2, 영문/숫자는 1로 계산
+              let cellLength = 0;
+              for (let char of cellText) {
+                if (char.match(/[가-힣]/)) {
+                  cellLength += 2;
+                } else {
+                  cellLength += 1;
+                }
+              }
+              maxLength = Math.max(maxLength, cellLength);
+            }
+          }
+          
+          // 계산된 너비 적용 (최소 100픽셀)
+          const calculatedWidth = Math.max(100, maxLength * 8 + 20);
+          sheet.setColumnWidth(col, calculatedWidth);
+        }
+        
+      } catch (e) {
+        // 오류 발생 시 기본 너비 설정
+        console.log(`Error resizing column ${col}: ${e.toString()}`);
+        sheet.setColumnWidth(col, 120);
+      }
+    }
+    
+    // 최종 flush
+    SpreadsheetApp.flush();
+  }
+}
+
+/**
+ * 대학과 소속 컬럼이 모두 비어있는 행을 삭제하는 함수
+ */
+function deleteRowsWithEmptyCollegeAndDepartment(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  
+  let collegeCol = -1;
+  let departmentCol = -1;
+  
+  for (let i = 0; i < headers.length; i++) {
+    if (headers[i] === '대학') {
+      collegeCol = i + 1;
+    } else if (headers[i] === '소속') {
+      departmentCol = i + 1;
+    }
+  }
+  
+  if (collegeCol === -1 || departmentCol === -1) return;
+  
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+  
+  const dataRange = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn());
+  const allData = dataRange.getValues();
+  
+  const validRowsData = [];
+  for (let i = 0; i < allData.length; i++) {
+    const collegeValue = allData[i][collegeCol - 1];
+    const departmentValue = allData[i][departmentCol - 1];
+    
+    // 대학과 소속 중 하나라도 값이 있으면 유지
+    if ((collegeValue && collegeValue.toString().trim() !== '') || 
+        (departmentValue && departmentValue.toString().trim() !== '')) {
+      validRowsData.push(allData[i]);
+    }
+  }
+  
+  if (lastRow > 1) {
+    dataRange.clearContent();
+  }
+  
+  if (validRowsData.length > 0) {
+    const newRange = sheet.getRange(2, 1, validRowsData.length, validRowsData[0].length);
+    newRange.setValues(validRowsData);
+  }
+  
+  const currentLastRow = sheet.getLastRow();
+  const newLastRow = validRowsData.length + 1;
+  
+  if (currentLastRow > newLastRow) {
+    sheet.deleteRows(newLastRow + 1, currentLastRow - newLastRow);
+  }
+}
+
+/**
+ * 직렬이 총장, 감독, 시간강사인 행을 삭제하는 함수
+ */
+function deleteSpecificPositionRows(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  
+  let positionCol = -1;
+  for (let i = 0; i < headers.length; i++) {
+    if (headers[i] === '직렬') {
+      positionCol = i + 1;
+      break;
+    }
+  }
+  
+  if (positionCol === -1) return;
+  
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+  
+  const dataRange = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn());
+  const allData = dataRange.getValues();
+  
+  // 삭제할 직렬 목록
+  const positionsToDelete = ['총장', '감독', '시간강사'];
+  
+  const filteredRowsData = [];
+  for (let i = 0; i < allData.length; i++) {
+    const positionValue = allData[i][positionCol - 1];
+    const positionStr = positionValue ? positionValue.toString().trim() : '';
+    
+    // 삭제 대상 직렬이 아닌 경우만 유지
+    if (!positionsToDelete.includes(positionStr)) {
+      filteredRowsData.push(allData[i]);
+    }
+  }
+  
+  if (lastRow > 1) {
+    dataRange.clearContent();
+  }
+  
+  if (filteredRowsData.length > 0) {
+    const newRange = sheet.getRange(2, 1, filteredRowsData.length, filteredRowsData[0].length);
+    newRange.setValues(filteredRowsData);
+  }
+  
+  const currentLastRow = sheet.getLastRow();
+  const newLastRow = filteredRowsData.length + 1;
+  
+  if (currentLastRow > newLastRow) {
+    sheet.deleteRows(newLastRow + 1, currentLastRow - newLastRow);
+  }
+}
+
+/**
+ * 소속 컬럼의 내용을 대학 컬럼으로 복사하는 함수
+ */
+function copyDepartmentToCollege(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  
+  let collegeCol = -1;
+  let departmentCol = -1;
+  
+  for (let i = 0; i < headers.length; i++) {
+    if (headers[i] === '대학') {
+      collegeCol = i + 1;
+    } else if (headers[i] === '소속') {
+      departmentCol = i + 1;
+    }
+  }
+  
+  if (collegeCol === -1 || departmentCol === -1) return;
+  
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+  
+  for (let row = 2; row <= lastRow; row++) {
+    const collegeValue = sheet.getRange(row, collegeCol).getValue();
+    const departmentValue = sheet.getRange(row, departmentCol).getValue();
+    
+    // 대학이 비어있고 소속에 값이 있는 경우
+    if ((!collegeValue || collegeValue.toString().trim() === '') && 
+        departmentValue && departmentValue.toString().trim() !== '') {
+      
+      // 소속 값을 그대로 대학 컬럼에 복사
+      const targetCell = sheet.getRange(row, collegeCol);
+      targetCell.setValue(departmentValue.toString().trim());
+      
+      // 노란색으로 배경색 변경
+      targetCell.setBackground('#FFFF00');
+    }
+  }
+}
+
+/**
+ * 헤더명을 기준으로 특정 열들을 삭제하는 함수
+ */
+function deleteColumnsByHeaderName(sheet, headerNames) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const columnsToDelete = [];
+  
+  for (let i = 0; i < headers.length; i++) {
+    const headerText = headers[i].toString().trim();
+    if (headerNames.includes(headerText)) {
+      columnsToDelete.push(i + 1);
+    }
+  }
+  
+  if (columnsToDelete.length === 0) return;
+  
+  columnsToDelete.sort((a, b) => b - a);
+  for (const colIndex of columnsToDelete) {
+    sheet.deleteColumn(colIndex);
+  }
+}
+
+/**
+ * 재직구분이 '퇴직'인 행들을 삭제하는 함수
+ */
+function deleteRetiredRows(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  
+  let statusCol = -1;
+  for (let i = 0; i < headers.length; i++) {
+    if (headers[i] === '재직구분') {
+      statusCol = i + 1;
+      break;
+    }
+  }
+  
+  if (statusCol === -1) return;
+  
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+  
+  const dataRange = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn());
+  const allData = dataRange.getValues();
+  
+  const activeRowsData = [];
+  for (let i = 0; i < allData.length; i++) {
+    const statusValue = allData[i][statusCol - 1];
+    if (!statusValue || statusValue.toString().trim() !== '퇴직') {
+      activeRowsData.push(allData[i]);
+    }
+  }
+  
+  if (lastRow > 1) {
+    dataRange.clearContent();
+  }
+  
+  if (activeRowsData.length > 0) {
+    const newRange = sheet.getRange(2, 1, activeRowsData.length, activeRowsData[0].length);
+    newRange.setValues(activeRowsData);
+  }
+  
+  const currentLastRow = sheet.getLastRow();
+  const newLastRow = activeRowsData.length + 1;
+  
+  if (currentLastRow > newLastRow) {
+    sheet.deleteRows(newLastRow + 1, currentLastRow - newLastRow);
+  }
+}
+
+/**
+ * 병합된 헤더를 단일 행으로 정리하는 함수
+ */
+function consolidateMergedHeaders(sheet, headerRowIndex) {
+  const maxCols = sheet.getLastColumn();
+  const checkRows = Math.min(3, sheet.getMaxRows() - headerRowIndex + 1);
+  const headerData = sheet.getRange(headerRowIndex, 1, checkRows, maxCols).getValues();
+  
+  function isDataRow(rowData) {
+    let numericCount = 0;
+    let filledCount = 0;
+    
+    for (let cell of rowData) {
+      if (cell && cell.toString().trim() !== '') {
+        filledCount++;
+        if (!isNaN(cell) || cell.toString().match(/^\d{4}\.\d{1,2}\.\d{1,2}$/)) {
+          numericCount++;
+        }
+      }
+    }
+    return filledCount > 0 && (numericCount / filledCount) >= 0.3;
+  }
+  
+  let actualHeaderRows = 1;
+  if (headerData.length > 1 && !isDataRow(headerData[1])) {
+    actualHeaderRows = 2;
+  }
+  
+  const consolidatedHeaders = [];
+  
+  for (let col = 0; col < maxCols; col++) {
+    let headerText = '';
+    const primaryHeader = headerData[0][col] ? headerData[0][col].toString().trim() : '';
+    let secondaryHeader = '';
+    
+    if (actualHeaderRows > 1 && headerData[1]) {
+      secondaryHeader = headerData[1][col] ? headerData[1][col].toString().trim() : '';
+    }
+    
+    if (primaryHeader) {
+      headerText = primaryHeader.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+      if (secondaryHeader && secondaryHeader !== primaryHeader) {
+        const cleanSecondaryHeader = secondaryHeader.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+        headerText = `${headerText}_${cleanSecondaryHeader}`;
+      }
+    } else if (secondaryHeader) {
+      headerText = secondaryHeader.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+    
+    consolidatedHeaders.push(headerText);
+  }
+  
+  if (consolidatedHeaders.length > 0) {
+    sheet.getRange(headerRowIndex, 1, 1, consolidatedHeaders.length).setValues([consolidatedHeaders]);
+    if (actualHeaderRows > 1) {
+      sheet.deleteRow(headerRowIndex + 1);
+    }
+  }
+  
+  try {
+    sheet.getRange(headerRowIndex, 1, 1, maxCols).breakApart();
+  } catch (e) {
+    // 병합된 셀이 없는 경우 무시
+  }
+}
+
+/**
+ * 병합된 헤더를 고려하여 통합된 헤더 텍스트를 반환하는 함수
+ */
+function getConsolidatedHeaders(sheet, headerRowIndex) {
+  const maxCols = sheet.getLastColumn();
+  const checkRows = Math.min(3, sheet.getMaxRows() - headerRowIndex + 1);
+  const headerData = sheet.getRange(headerRowIndex, 1, checkRows, maxCols).getValues();
+  
+  function isDataRow(rowData) {
+    let numericCount = 0;
+    let filledCount = 0;
+    
+    for (let cell of rowData) {
+      if (cell && cell.toString().trim() !== '') {
+        filledCount++;
+        if (!isNaN(cell) || cell.toString().match(/^\d{4}\.\d{1,2}\.\d{1,2}$/)) {
+          numericCount++;
+        }
+      }
+    }
+    return filledCount > 0 && (numericCount / filledCount) >= 0.3;
+  }
+  
+  let actualHeaderRows = 1;
+  if (headerData.length > 1 && !isDataRow(headerData[1])) {
+    actualHeaderRows = 2;
+  }
+  
+  const consolidatedHeaders = [];
+  
+  for (let col = 0; col < maxCols; col++) {
+    let headerText = '';
+    const primaryHeader = headerData[0][col] ? headerData[0][col].toString().trim() : '';
+    let secondaryHeader = '';
+    
+    if (actualHeaderRows > 1 && headerData[1]) {
+      secondaryHeader = headerData[1][col] ? headerData[1][col].toString().trim() : '';
+    }
+    
+    if (primaryHeader) {
+      headerText = primaryHeader.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+      if (secondaryHeader && secondaryHeader !== primaryHeader) {
+        const cleanSecondaryHeader = secondaryHeader.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+        headerText = `${headerText}_${cleanSecondaryHeader}`;
+      }
+    } else if (secondaryHeader) {
+      headerText = secondaryHeader.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+    
+    consolidatedHeaders.push(headerText);
+  }
+  
+  return consolidatedHeaders;
+}
+
+/**
+ * 경험적 규칙으로 헤더 행을 찾는 함수
+ */
+function findHeaderRowHeuristically(sheet) {
+  const maxRowsToCheck = 20;
+  const data = sheet.getRange(1, 1, maxRowsToCheck, sheet.getLastColumn()).getValues();
+  
+  let bestCandidateRow = -1;
+  let maxFilledCells = 0;
+
+  for (let i = 0; i < data.length; i++) {
+    const filledCells = data[i].filter(cell => cell.toString().trim() !== '').length;
+    
+    if (filledCells >= 3 && filledCells > maxFilledCells) {
+      maxFilledCells = filledCells;
+      bestCandidateRow = i + 1;
+    }
+  }
+  return bestCandidateRow;
+}
+
+/**
+ * 시트 하단의 빈 행들을 삭제하는 함수
+ */
+function removeEmptyRowsAtBottom(sheet) {
+  const maxRows = sheet.getMaxRows();
+  const lastRow = sheet.getLastRow();
+  
+  if (maxRows > lastRow) {
+    sheet.deleteRows(lastRow + 1, maxRows - lastRow);
+  }
+}
+
+/**
+ * 4. 두 시트를 비교하여 변경사항을 찾는 메인 함수 (대화상자 방식)
+ */
+function compareSheets() {
+  const ui = SpreadsheetApp.getUi();
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  
+  try {
+    const sheets = spreadsheet.getSheets();
+    const sheetNames = sheets.map(s => s.getName());
+    
+    // 비교 대상 시트 제외 목록
+    const excludeSheets = ['변경사항_비교결과', '교원현황_정리본'];
+    const availableSheets = sheetNames.filter(name => !excludeSheets.includes(name));
+    
+    if (availableSheets.length < 2) {
+      ui.alert('비교할 수 있는 시트가 2개 이상 필요합니다.');
+      return;
+    }
+    
+    // 간단한 프롬프트 방식으로 변경
+    const sheetListText = availableSheets.map((name, index) => `${index + 1}. ${name}`).join('\n');
+    
+    const oldSheetResponse = ui.prompt(
+      '이전 버전 시트 선택',
+      `비교할 이전 버전 시트의 번호를 입력하세요:\n\n${sheetListText}\n\n번호 입력:`,
+      ui.ButtonSet.OK_CANCEL
+    );
+    
+    if (oldSheetResponse.getSelectedButton() !== ui.Button.OK) {
+      return;
+    }
+    
+    const oldSheetIndex = parseInt(oldSheetResponse.getResponseText()) - 1;
+    if (isNaN(oldSheetIndex) || oldSheetIndex < 0 || oldSheetIndex >= availableSheets.length) {
+      ui.alert('올바른 번호를 입력해주세요.');
+      return;
+    }
+    
+    const oldSheetName = availableSheets[oldSheetIndex];
+    
+    // 선택된 시트를 제외한 목록 생성
+    const remainingSheets = availableSheets.filter((name, index) => index !== oldSheetIndex);
+    const remainingListText = remainingSheets.map((name, index) => `${index + 1}. ${name}`).join('\n');
+    
+    const newSheetResponse = ui.prompt(
+      '현재 버전 시트 선택',
+      `비교할 현재 버전 시트의 번호를 입력하세요:\n\n${remainingListText}\n\n번호 입력:`,
+      ui.ButtonSet.OK_CANCEL
+    );
+    
+    if (newSheetResponse.getSelectedButton() !== ui.Button.OK) {
+      return;
+    }
+    
+    const newSheetIndex = parseInt(newSheetResponse.getResponseText()) - 1;
+    if (isNaN(newSheetIndex) || newSheetIndex < 0 || newSheetIndex >= remainingSheets.length) {
+      ui.alert('올바른 번호를 입력해주세요.');
+      return;
+    }
+    
+    const newSheetName = remainingSheets[newSheetIndex];
+    
+    // 비교 실행 확인
+    const confirmResult = ui.alert(
+      '비교 확인',
+      `다음 시트를 비교합니다:\n\n이전 버전: ${oldSheetName}\n현재 버전: ${newSheetName}\n\n계속하시겠습니까?`,
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (confirmResult !== ui.Button.YES) {
+      return;
+    }
+    
+    // 비교 실행
+    executeSheetsComparison(oldSheetName, newSheetName);
+    
+  } catch (error) {
+    ui.alert('오류 발생', '시트 비교 중 오류가 발생했습니다:\n' + error.toString(), ui.ButtonSet.OK);
+  }
+}
+
+/**
+ * 실제 비교 실행 함수
+ */
+function executeSheetsComparison(oldSheetName, newSheetName) {
+  const ui = SpreadsheetApp.getUi();
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  
+  try {
+    const oldSheet = spreadsheet.getSheetByName(oldSheetName);
+    const newSheet = spreadsheet.getSheetByName(newSheetName);
+    
+    if (!oldSheet || !newSheet) {
+      throw new Error('선택한 시트를 찾을 수 없습니다.');
+    }
+    
+    // 비교 결과를 저장할 새 시트 생성
+    const resultSheetName = '변경사항_비교결과';
+    let resultSheet = spreadsheet.getSheetByName(resultSheetName);
+    if (resultSheet) {
+      spreadsheet.deleteSheet(resultSheet);
+    }
+    resultSheet = spreadsheet.insertSheet(resultSheetName);
+    
+    // 비교 실행
+    const changes = compareData(oldSheet, newSheet);
+    
+    // 결과 출력
+    displayComparisonResults(resultSheet, changes, oldSheetName, newSheetName);
+    
+    // 결과 시트로 이동
+    resultSheet.activate();
+    
+    // 완료 메시지
+    const totalChanges = changes.added.length + changes.removed.length + changes.modified.length;
+    
+    ui.alert(
+      '비교 완료',
+      `✅ 변경사항 비교가 완료되었습니다!\n\n` +
+      `📊 총 ${totalChanges}건의 변경사항\n` +
+      `• 신규 추가: ${changes.added.length}건\n` +
+      `• 삭제: ${changes.removed.length}건\n` +
+      `• 수정: ${changes.modified.length}건\n\n` +
+      `상세 내용은 '${resultSheetName}' 시트를 확인하세요.`,
+      ui.ButtonSet.OK
+    );
+    
+    return true;
+    
+  } catch (error) {
+    throw new Error('비교 실행 중 오류: ' + error.toString());
+  }
+}
+
+/**
+ * 두 시트의 데이터를 비교하는 함수
+ */
+function compareData(oldSheet, newSheet) {
+  // 헤더 찾기
+  const oldHeaderRow = findHeaderRowHeuristically(oldSheet);
+  const newHeaderRow = findHeaderRowHeuristically(newSheet);
+  
+  if (oldHeaderRow === -1 || newHeaderRow === -1) {
+    throw new Error('헤더를 찾을 수 없습니다.');
+  }
+  
+  // 데이터 가져오기
+  const oldData = getSheetDataAsObject(oldSheet, oldHeaderRow);
+  const newData = getSheetDataAsObject(newSheet, newHeaderRow);
+  
+  // 기준 열 찾기 (성명 또는 성명(한글))
+  const keyColumn = findKeyColumn(oldData.headers);
+  
+  // 데이터를 Map으로 변환 (성명을 키로 사용)
+  const oldMap = new Map();
+  const newMap = new Map();
+  
+  oldData.rows.forEach(row => {
+    const key = row[keyColumn];
+    if (key) oldMap.set(key, row);
+  });
+  
+  newData.rows.forEach(row => {
+    const key = row[keyColumn];
+    if (key) newMap.set(key, row);
+  });
+  
+  // 변경사항 찾기
+  const changes = {
+    added: [],      // 신규 추가된 교원
+    removed: [],    // 삭제된 교원
+    modified: []    // 정보가 변경된 교원
+  };
+  
+  // 삭제된 항목 찾기
+  oldMap.forEach((oldRow, key) => {
+    if (!newMap.has(key)) {
+      changes.removed.push({
+        name: key,
+        data: oldRow
+      });
+    }
+  });
+  
+  // 추가 및 수정된 항목 찾기
+  newMap.forEach((newRow, key) => {
+    if (!oldMap.has(key)) {
+      // 신규 추가
+      changes.added.push({
+        name: key,
+        data: newRow
+      });
+    } else {
+      // 변경사항 확인
+      const oldRow = oldMap.get(key);
+      const modifications = findModifications(oldRow, newRow, oldData.headers);
+      
+      if (modifications.length > 0) {
+        changes.modified.push({
+          name: key,
+          modifications: modifications,
+          oldData: oldRow,
+          newData: newRow
+        });
+      }
+    }
+  });
+  
+  return changes;
+}
+
+/**
+ * 시트 데이터를 객체 형태로 가져오는 함수
+ */
+function getSheetDataAsObject(sheet, headerRow) {
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  
+  if (lastRow < headerRow) {
+    return { headers: [], rows: [] };
+  }
+  
+  // 헤더 가져오기
+  const headers = sheet.getRange(headerRow, 1, 1, lastCol).getValues()[0];
+  
+  // 데이터 가져오기
+  const rows = [];
+  if (lastRow > headerRow) {
+    const dataRange = sheet.getRange(headerRow + 1, 1, lastRow - headerRow, lastCol);
+    const dataValues = dataRange.getValues();
+    
+    dataValues.forEach(row => {
+      const rowObj = {};
+      headers.forEach((header, index) => {
+        rowObj[header] = row[index];
+      });
+      rows.push(rowObj);
+    });
+  }
+  
+  return { headers, rows };
+}
+
+/**
+ * 기준이 되는 키 열을 찾는 함수 (성명 열)
+ */
+function findKeyColumn(headers) {
+  // 가능한 성명 관련 헤더들
+  const possibleKeys = ['성명', '성명(한글)', '이름', '교원명'];
+  
+  for (const key of possibleKeys) {
+    if (headers.includes(key)) {
+      return key;
+    }
+  }
+  
+  // 기본값으로 첫 번째 헤더 사용
+  return headers[0];
+}
+
+/**
+ * 두 행 간의 변경사항을 찾는 함수
+ */
+function findModifications(oldRow, newRow, headers) {
+  const modifications = [];
+  
+  // 중요한 필드들을 우선 확인
+  const importantFields = ['재직구분', '직급', '직렬', '대학', '소속', 
+                          '재임용시작일', '재임용종료일', '전임교원 최초임용일', 
+                          '최초임용 시작일', '퇴직일자'];
+  
+  // 중요 필드 먼저 확인
+  for (const field of importantFields) {
+    if (headers.includes(field)) {
+      const oldValue = oldRow[field] || '';
+      const newValue = newRow[field] || '';
+      
+      if (normalizeValue(oldValue) !== normalizeValue(newValue)) {
+        modifications.push({
+          field: field,
+          oldValue: oldValue,
+          newValue: newValue,
+          isImportant: true
+        });
+      }
+    }
+  }
+  
+  // 나머지 필드 확인
+  for (const header of headers) {
+    if (!importantFields.includes(header)) {
+      const oldValue = oldRow[header] || '';
+      const newValue = newRow[header] || '';
+      
+      if (normalizeValue(oldValue) !== normalizeValue(newValue)) {
+        modifications.push({
+          field: header,
+          oldValue: oldValue,
+          newValue: newValue,
+          isImportant: false
+        });
+      }
+    }
+  }
+  
+  return modifications;
+}
+
+/**
+ * 값을 정규화하는 함수 (비교를 위해)
+ */
+function normalizeValue(value) {
+  if (value instanceof Date) {
+    return Utilities.formatDate(value, 'GMT+9', 'yyyy-MM-dd');
+  }
+  return value.toString().trim();
+}
+
+/**
+ * 비교 결과를 시트에 표시하는 함수 (디자인 개선 버전)
+ */
+function displayComparisonResults(sheet, changes, oldSheetName, newSheetName) {
+  let row = 1;
+  
+  // 전체 배경색 설정
+  sheet.getRange(1, 1, 200, 10).setBackground('#FFFFFF');
+  
+  // ===== 타이틀 섹션 =====
+  sheet.getRange(row, 1).setValue('📊 교원현황 변경사항 비교 보고서');
+  sheet.getRange(row, 1).setFontSize(20).setFontWeight('bold').setFontColor('#1a73e8');
+  row += 1;
+  
+  // 구분선
+  sheet.getRange(row, 1, 1, 8).setBackground('#1a73e8');
+  sheet.setRowHeight(row, 3);
+  row += 2;
+  
+  // ===== 비교 정보 섹션 =====
+  // 비교 정보 카드 스타일
+  sheet.getRange(row, 1, 3, 8).setBorder(true, true, true, true, false, false, '#dadce0', SpreadsheetApp.BorderStyle.SOLID);
+  sheet.getRange(row, 1, 3, 8).setBackground('#f8f9fa');
+  
+  sheet.getRange(row, 1).setValue('📁 이전 시트');
+  sheet.getRange(row, 1).setFontWeight('bold').setFontColor('#5f6368');
+  sheet.getRange(row, 2, 1, 2).merge();
+  sheet.getRange(row, 2).setValue(oldSheetName);
+  sheet.getRange(row, 2).setFontColor('#202124');
+  
+  sheet.getRange(row, 5).setValue('📁 현재 시트');
+  sheet.getRange(row, 5).setFontWeight('bold').setFontColor('#5f6368');
+  sheet.getRange(row, 6, 1, 2).merge();
+  sheet.getRange(row, 6).setValue(newSheetName);
+  sheet.getRange(row, 6).setFontColor('#202124');
+  row += 1;
+  
+  sheet.getRange(row, 1).setValue('🕐 비교 일시');
+  sheet.getRange(row, 1).setFontWeight('bold').setFontColor('#5f6368');
+  sheet.getRange(row, 2, 1, 3).merge();
+  sheet.getRange(row, 2).setValue(Utilities.formatDate(new Date(), 'GMT+9', 'yyyy년 MM월 dd일 HH:mm:ss'));
+  sheet.getRange(row, 2).setFontColor('#202124');
+  
+  sheet.getRange(row, 5).setValue('👤 작성자');
+  sheet.getRange(row, 5).setFontWeight('bold').setFontColor('#5f6368');
+  sheet.getRange(row, 6, 1, 2).merge();
+  sheet.getRange(row, 6).setValue(Session.getActiveUser().getEmail());
+  sheet.getRange(row, 6).setFontColor('#202124');
+  row += 3;
+  
+  // ===== 요약 통계 섹션 =====
+  const totalChanges = changes.added.length + changes.removed.length + changes.modified.length;
+  
+  // 요약 제목
+  sheet.getRange(row, 1).setValue('📈 변경사항 요약');
+  sheet.getRange(row, 1).setFontSize(16).setFontWeight('bold').setFontColor('#1a73e8');
+  row += 2;
+  
+  // 통계 카드들
+  // 전체 변경건수 (큰 카드)
+  sheet.getRange(row, 1, 3, 8).setBorder(true, true, true, true, false, false, '#dadce0', SpreadsheetApp.BorderStyle.SOLID);
+  sheet.getRange(row, 1, 1, 8).setBackground('#e8f0fe');
+  sheet.getRange(row, 1, 1, 2).merge();
+  sheet.getRange(row, 1).setValue('전체 변경건수');
+  sheet.getRange(row, 1).setFontWeight('bold').setFontColor('#1967d2');
+  sheet.getRange(row, 3, 1, 2).merge();
+  sheet.getRange(row, 3).setValue(totalChanges + '건');
+  sheet.getRange(row, 3).setFontSize(18).setFontWeight('bold').setFontColor('#1967d2');
+  sheet.getRange(row, 3).setHorizontalAlignment('center');
+  row += 2;
+  
+  // 개별 통계 (3개 카드)
+  // 신규 추가 카드
+  sheet.getRange(row, 1, 2, 2).setBorder(true, true, true, true, false, false, '#34a853', SpreadsheetApp.BorderStyle.SOLID);
+  sheet.getRange(row, 1, 1, 2).setBackground('#e6f4ea');
+  sheet.getRange(row, 1).setValue('✅ 신규 추가');
+  sheet.getRange(row, 1).setFontWeight('bold').setFontColor('#188038');
+  sheet.getRange(row + 1, 1, 1, 2).merge();
+  sheet.getRange(row + 1, 1).setValue(changes.added.length + '건');
+  sheet.getRange(row + 1, 1).setFontSize(24).setFontWeight('bold').setFontColor('#188038');
+  sheet.getRange(row + 1, 1).setHorizontalAlignment('center');
+  
+  // 삭제 카드
+  sheet.getRange(row, 3, 2, 2).setBorder(true, true, true, true, false, false, '#ea4335', SpreadsheetApp.BorderStyle.SOLID);
+  sheet.getRange(row, 3, 1, 2).setBackground('#fce8e6');
+  sheet.getRange(row, 3).setValue('❌ 삭제');
+  sheet.getRange(row, 3).setFontWeight('bold').setFontColor('#c5221f');
+  sheet.getRange(row + 1, 3, 1, 2).merge();
+  sheet.getRange(row + 1, 3).setValue(changes.removed.length + '건');
+  sheet.getRange(row + 1, 3).setFontSize(24).setFontWeight('bold').setFontColor('#c5221f');
+  sheet.getRange(row + 1, 3).setHorizontalAlignment('center');
+  
+  // 수정 카드
+  sheet.getRange(row, 5, 2, 2).setBorder(true, true, true, true, false, false, '#fbbc04', SpreadsheetApp.BorderStyle.SOLID);
+  sheet.getRange(row, 5, 1, 2).setBackground('#fef7e0');
+  sheet.getRange(row, 5).setValue('✏️ 수정');
+  sheet.getRange(row, 5).setFontWeight('bold').setFontColor('#f9ab00');
+  sheet.getRange(row + 1, 5, 1, 2).merge();
+  sheet.getRange(row + 1, 5).setValue(changes.modified.length + '건');
+  sheet.getRange(row + 1, 5).setFontSize(24).setFontWeight('bold').setFontColor('#f9ab00');
+  sheet.getRange(row + 1, 5).setHorizontalAlignment('center');
+  
+  row += 4;
+  
+  // ===== 신규 추가된 교원 섹션 =====
+  if (changes.added.length > 0) {
+    // 섹션 제목
+    sheet.getRange(row, 1, 1, 8).setBackground('#e6f4ea');
+    sheet.getRange(row, 1).setValue('✅ 신규 추가된 교원 (' + changes.added.length + '명)');
+    sheet.getRange(row, 1).setFontSize(14).setFontWeight('bold').setFontColor('#188038');
+    row += 1;
+    
+    // 테이블 헤더
+    const addedHeaders = [['No.', '성명', '직급', '직렬', '대학', '소속', '재직구분', '비고']];
+    sheet.getRange(row, 1, 1, 8).setValues(addedHeaders);
+    sheet.getRange(row, 1, 1, 8).setBackground('#34a853');
+    sheet.getRange(row, 1, 1, 8).setFontColor('#ffffff');
+    sheet.getRange(row, 1, 1, 8).setFontWeight('bold');
+    sheet.getRange(row, 1, 1, 8).setBorder(true, true, true, true, true, true, '#ffffff', SpreadsheetApp.BorderStyle.SOLID);
+    row += 1;
+    
+    // 데이터 행
+    changes.added.forEach((item, index) => {
+      const rowData = [[
+        index + 1,
+        item.name || '',
+        item.data['직급'] || '',
+        item.data['직렬'] || '',
+        item.data['대학'] || '',
+        item.data['소속'] || '',
+        item.data['재직구분'] || '',
+        ''
+      ]];
+      sheet.getRange(row, 1, 1, 8).setValues(rowData);
+      sheet.getRange(row, 1, 1, 8).setBorder(null, true, true, true, true, true, '#e0e0e0', SpreadsheetApp.BorderStyle.SOLID);
+      
+      // 짝수 행 배경색
+      if (index % 2 === 0) {
+        sheet.getRange(row, 1, 1, 8).setBackground('#f8f9fa');
+      }
+      row += 1;
+    });
+    row += 2;
+  }
+  
+  // ===== 삭제된 교원 섹션 =====
+  if (changes.removed.length > 0) {
+    // 섹션 제목
+    sheet.getRange(row, 1, 1, 8).setBackground('#fce8e6');
+    sheet.getRange(row, 1).setValue('❌ 삭제된 교원 (' + changes.removed.length + '명)');
+    sheet.getRange(row, 1).setFontSize(14).setFontWeight('bold').setFontColor('#c5221f');
+    row += 1;
+    
+    // 테이블 헤더
+    const removedHeaders = [['No.', '성명', '직급', '직렬', '대학', '소속', '재직구분', '비고']];
+    sheet.getRange(row, 1, 1, 8).setValues(removedHeaders);
+    sheet.getRange(row, 1, 1, 8).setBackground('#ea4335');
+    sheet.getRange(row, 1, 1, 8).setFontColor('#ffffff');
+    sheet.getRange(row, 1, 1, 8).setFontWeight('bold');
+    sheet.getRange(row, 1, 1, 8).setBorder(true, true, true, true, true, true, '#ffffff', SpreadsheetApp.BorderStyle.SOLID);
+    row += 1;
+    
+    // 데이터 행
+    changes.removed.forEach((item, index) => {
+      const rowData = [[
+        index + 1,
+        item.name || '',
+        item.data['직급'] || '',
+        item.data['직렬'] || '',
+        item.data['대학'] || '',
+        item.data['소속'] || '',
+        item.data['재직구분'] || '',
+        ''
+      ]];
+      sheet.getRange(row, 1, 1, 8).setValues(rowData);
+      sheet.getRange(row, 1, 1, 8).setBorder(null, true, true, true, true, true, '#e0e0e0', SpreadsheetApp.BorderStyle.SOLID);
+      
+      // 짝수 행 배경색
+      if (index % 2 === 0) {
+        sheet.getRange(row, 1, 1, 8).setBackground('#f8f9fa');
+      }
+      row += 1;
+    });
+    row += 2;
+  }
+  
+  // ===== 정보가 변경된 교원 섹션 =====
+  if (changes.modified.length > 0) {
+    // 섹션 제목
+    sheet.getRange(row, 1, 1, 8).setBackground('#fef7e0');
+    sheet.getRange(row, 1).setValue('✏️ 정보가 변경된 교원 (' + changes.modified.length + '명)');
+    sheet.getRange(row, 1).setFontSize(14).setFontWeight('bold').setFontColor('#f9ab00');
+    row += 1;
+    
+    // 테이블 헤더
+    const modifiedHeaders = [['No.', '성명', '변경 항목', '이전 값', '', '변경 값', '중요도', '']];
+    sheet.getRange(row, 1, 1, 8).setValues(modifiedHeaders);
+    sheet.getRange(row, 1, 1, 8).setBackground('#fbbc04');
+    sheet.getRange(row, 1, 1, 8).setFontColor('#ffffff');
+    sheet.getRange(row, 1, 1, 8).setFontWeight('bold');
+    sheet.getRange(row, 1, 1, 8).setBorder(true, true, true, true, true, true, '#ffffff', SpreadsheetApp.BorderStyle.SOLID);
+    row += 1;
+    
+    let modIndex = 1;
+    changes.modified.forEach(item => {
+      const importantMods = item.modifications.filter(m => m.isImportant);
+      const otherMods = item.modifications.filter(m => !m.isImportant);
+      
+      let isFirstRow = true;
+      
+      // 중요 변경사항
+      importantMods.forEach(mod => {
+        const modRowData = [[
+          isFirstRow ? modIndex++ : '',
+          isFirstRow ? item.name || '' : '',
+          mod.field || '',
+          formatValue(mod.oldValue),
+          '→',
+          formatValue(mod.newValue),
+          '⚠️ 중요',
+          ''
+        ]];
+        sheet.getRange(row, 1, 1, 8).setValues(modRowData);
+        sheet.getRange(row, 1, 1, 8).setBorder(null, true, true, true, true, true, '#e0e0e0', SpreadsheetApp.BorderStyle.SOLID);
+        
+        // 중요 변경사항 강조
+        sheet.getRange(row, 1, 1, 8).setBackground('#fff4e6');
+        sheet.getRange(row, 7).setFontWeight('bold').setFontColor('#e37400');
+        
+        isFirstRow = false;
+        row += 1;
+      });
+      
+      // 기타 변경사항 (최대 3개)
+      const displayOtherMods = otherMods.slice(0, 3);
+      displayOtherMods.forEach(mod => {
+        const modRowData = [[
+          isFirstRow ? modIndex++ : '',
+          isFirstRow ? item.name || '' : '',
+          mod.field || '',
+          formatValue(mod.oldValue),
+          '→',
+          formatValue(mod.newValue),
+          '',
+          ''
+        ]];
+        sheet.getRange(row, 1, 1, 8).setValues(modRowData);
+        sheet.getRange(row, 1, 1, 8).setBorder(null, true, true, true, true, true, '#e0e0e0', SpreadsheetApp.BorderStyle.SOLID);
+        
+        // 일반 행 배경색
+        sheet.getRange(row, 1, 1, 8).setBackground('#f8f9fa');
+        
+        isFirstRow = false;
+        row += 1;
+      });
+      
+      // 추가 항목이 있는 경우
+      if (otherMods.length > 3) {
+        const extraRowData = [[
+          '',
+          '',
+          '... 그 외 ' + (otherMods.length - 3) + '개 항목 변경',
+          '',
+          '',
+          '',
+          '',
+          ''
+        ]];
+        sheet.getRange(row, 1, 1, 8).setValues(extraRowData);
+        sheet.getRange(row, 3).setFontStyle('italic').setFontColor('#5f6368');
+        sheet.getRange(row, 1, 1, 8).setBorder(null, true, true, true, true, true, '#e0e0e0', SpreadsheetApp.BorderStyle.SOLID);
+        sheet.getRange(row, 1, 1, 8).setBackground('#f8f9fa');
+        row += 1;
+      }
+      
+      // 항목 간 구분을 위한 빈 행
+      if (changes.modified.indexOf(item) < changes.modified.length - 1) {
+        sheet.setRowHeight(row, 5);
+        row += 1;
+      }
+    });
+    row += 2;
+  }
+  
+  // ===== 하단 서명 섹션 =====
+  sheet.getRange(row, 1, 1, 8).setBorder(true, false, false, false, false, false, '#dadce0', SpreadsheetApp.BorderStyle.SOLID);
+  row += 1;
+  sheet.getRange(row, 1).setValue('📝 본 보고서는 자동으로 생성되었습니다.');
+  sheet.getRange(row, 1).setFontSize(10).setFontColor('#5f6368').setFontStyle('italic');
+  
+  // 열 너비 최적화
+  sheet.setColumnWidth(1, 50);   // No.
+  sheet.setColumnWidth(2, 100);  // 성명
+  sheet.setColumnWidth(3, 150);  // 변경 항목 / 직급
+  sheet.setColumnWidth(4, 200);  // 이전 값 / 직렬
+  sheet.setColumnWidth(5, 30);   // 화살표 / 대학
+  sheet.setColumnWidth(6, 200);  // 변경 값 / 소속
+  sheet.setColumnWidth(7, 100);  // 중요도 / 재직구분
+  sheet.setColumnWidth(8, 100);  // 비고
+  
+  // 시트 플러시
+  SpreadsheetApp.flush();
+}
+
+/**
+ * 값을 표시용으로 포맷하는 함수
+ */
+function formatValue(value) {
+  if (!value || value === '') {
+    return '(비어있음)';
+  }
+  if (value instanceof Date) {
+    return Utilities.formatDate(value, 'GMT+9', 'yyyy.MM.dd');
+  }
+  return value.toString();
+}
