@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 페이지 - 교원 현황 시스템</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <!-- 로그인 모달 -->
+  <div id="loginModal" class="modal">
+    <div class="modal-content login-modal">
+      <h2>🔐 관리자 로그인</h2>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="password">비밀번호</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary">로그인</button>
+        <div id="loginError" class="error-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 메인 컨텐츠 -->
+  <div id="mainContent" class="hidden">
+    <header>
+      <div class="container">
+        <h1>📊 교원 현황 관리 시스템</h1>
+        <div class="header-actions">
+          <a href="index.html" class="btn btn-secondary" target="_blank">일반 사용자 페이지</a>
+          <button id="logoutBtn" class="btn btn-danger">로그아웃</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <!-- 탭 메뉴 -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="upload">📤 엑셀 업로드</button>
+        <button class="tab-btn" data-tab="organization">🏛️ 조직 순서 설정</button>
+        <button class="tab-btn" data-tab="history">📜 업로드 기록</button>
+      </div>
+
+      <!-- 탭 컨텐츠 -->
+      <div class="tab-content">
+        <!-- 엑셀 업로드 탭 -->
+        <div id="upload-tab" class="tab-pane active">
+          <div class="card">
+            <h2>엑셀 파일 업로드</h2>
+            <p class="description">교원현황_YYYYMMDD_HHMMSS.xlsx 형식의 엑셀 파일을 업로드하세요.</p>
+
+            <div class="upload-area" id="uploadArea">
+              <div class="upload-icon">📁</div>
+              <p>파일을 드래그하거나 클릭하여 선택하세요</p>
+              <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+              <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                파일 선택
+              </button>
+            </div>
+
+            <div id="fileInfo" class="file-info hidden">
+              <p><strong>선택된 파일:</strong> <span id="fileName"></span></p>
+              <p><strong>파일 크기:</strong> <span id="fileSize"></span></p>
+              <button id="uploadBtn" class="btn btn-success">업로드</button>
+              <button id="cancelBtn" class="btn btn-secondary">취소</button>
+            </div>
+
+            <div id="uploadProgress" class="progress hidden">
+              <div class="progress-bar"></div>
+              <p class="progress-text">업로드 중...</p>
+            </div>
+
+            <div id="uploadResult" class="result hidden"></div>
+          </div>
+        </div>
+
+        <!-- 조직 순서 설정 탭 -->
+        <div id="organization-tab" class="tab-pane">
+          <div class="card">
+            <h2>조직 순서 설정</h2>
+            <p class="description">대학 및 학과의 표시 순서를 설정할 수 있습니다.</p>
+
+            <div class="org-controls">
+              <button id="loadOrgBtn" class="btn btn-primary">현재 설정 불러오기</button>
+              <button id="saveOrgBtn" class="btn btn-success" disabled>저장</button>
+              <button id="resetOrgBtn" class="btn btn-secondary">기본값으로 초기화</button>
+            </div>
+
+            <div id="orgEditor" class="org-editor">
+              <p class="info-text">조직 설정을 불러오려면 위의 버튼을 클릭하세요.</p>
+            </div>
+
+            <div id="orgResult" class="result hidden"></div>
+          </div>
+        </div>
+
+        <!-- 업로드 기록 탭 -->
+        <div id="history-tab" class="tab-pane">
+          <div class="card">
+            <h2>업로드 기록</h2>
+            <p class="description">최근 업로드된 파일 목록입니다.</p>
+
+            <button id="refreshHistoryBtn" class="btn btn-primary">새로고침</button>
+
+            <div id="historyList" class="history-list">
+              <p class="info-text">업로드 기록을 불러오는 중...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="container">
+        <p>&copy; 2025 Faculty Status Management System. All rights reserved.</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

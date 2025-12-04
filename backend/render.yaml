@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: faculty-status-backend
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: FRONTEND_URL
+        value: https://parkseihuan.github.io/Faculty-status
+      - key: MAX_FILE_SIZE
+        value: 10
