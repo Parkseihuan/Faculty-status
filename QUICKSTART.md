@@ -40,7 +40,7 @@ npm start
 새 터미널에서:
 
 ```bash
-cd frontend
+cd docs
 
 # 간단한 HTTP 서버 실행
 npx http-server -p 8080
@@ -72,7 +72,7 @@ python -m http.server 8080
 ### Frontend (GitHub Pages)
 
 1. GitHub Pages 활성화
-2. `frontend/js/config.js`에서 API URL 업데이트
+2. `docs/js/config.js`에서 API URL 업데이트
 3. Push하면 자동 배포
 
 ---
@@ -113,7 +113,7 @@ npm install
 ### Frontend에서 Backend 연결 안 됨
 
 1. Backend가 실행 중인지 확인
-2. `frontend/js/config.js`에서 API URL 확인
+2. `docs/js/config.js`에서 API URL 확인
 3. 브라우저 콘솔(F12)에서 에러 확인
 
 ### CORS 에러

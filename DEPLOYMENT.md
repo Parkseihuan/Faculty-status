@@ -62,7 +62,7 @@ node -e "const bcrypt = require('bcryptjs'); bcrypt.hash('your-password-here', 1
 
 ### 1. API URL 업데이트
 
-`frontend/js/config.js` 파일을 수정:
+`docs/js/config.js` 파일을 수정:
 
 ```javascript
 const API_CONFIG = {
@@ -79,7 +79,7 @@ const API_CONFIG = {
 2. Settings → Pages
 3. Source: Deploy from a branch
 4. Branch: 선택 (예: `main` 또는 `claude/migrate...`)
-5. Folder: `/frontend` 선택
+5. Folder: `/docs` 선택
 6. Save
 
 ### 3. 배포 확인
@@ -121,7 +121,7 @@ curl https://your-backend-url.onrender.com/health
 
 ### Frontend
 
-- `frontend/js/config.js`에서 프로덕션 API URL 설정
+- `docs/js/config.js`에서 프로덕션 API URL 설정
 
 ## 🔒 보안 권장사항
 

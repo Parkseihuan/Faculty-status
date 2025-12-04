@@ -24,7 +24,7 @@ JSON Data Storage
 
 ```
 Faculty-status/
-├── frontend/           # 프론트엔드 파일
+├── docs/              # 프론트엔드 파일 (GitHub Pages)
 │   ├── index.html     # 일반 사용자 페이지
 │   ├── admin.html     # 관리자 페이지
 │   ├── css/
@@ -50,7 +50,7 @@ npm start
 ### Frontend 실행
 
 ```bash
-cd frontend
+cd docs
 # 웹 브라우저로 index.html 열기
 # 또는 간단한 HTTP 서버 실행:
 npx http-server
