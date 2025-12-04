@@ -56,8 +56,8 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
 
     console.log('Uploaded file:', req.file.filename);
 
-    // 엑셀 파일 파싱
-    const parsedData = excelParser.parseExcelFile(req.file.path);
+    // 엑셀 파일 파싱 (async)
+    const parsedData = await excelParser.parseExcelFile(req.file.path);
 
     // 파싱된 데이터를 JSON 파일로 저장
     const dataPath = path.join(__dirname, '../data/faculty-data.json');
