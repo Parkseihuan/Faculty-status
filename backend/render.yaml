@@ -1,7 +1,7 @@
 services:
   - type: web
     name: faculty-status-backend
-    env: node
+    runtime: node
     region: singapore
     plan: free
     buildCommand: npm install
