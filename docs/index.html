@@ -1096,41 +1096,9 @@
       }
     }
     
-    // 고정 열 문제 해결을 위한 추가 처리
-    function fixStickyColumns() {
-      const container = document.querySelector('.table-container');
-      if (!container) return;
-      
-      // 스크롤 이벤트 리스너 추가
-      container.addEventListener('scroll', function() {
-        const scrollLeft = this.scrollLeft;
-        
-        // 첫 번째 열 고정
-        const firstCols = document.querySelectorAll('table tr > *:nth-child(1)');
-        firstCols.forEach(col => {
-          col.style.transform = `translateX(${scrollLeft}px)`;
-        });
-        
-        // 두 번째 열 고정 (colspan이 없는 경우)
-        const secondCols = document.querySelectorAll('table tr > *:nth-child(2):not([colspan])');
-        secondCols.forEach(col => {
-          col.style.transform = `translateX(${scrollLeft}px)`;
-        });
-        
-        // colspan="2"인 셀 고정
-        const colspanCols = document.querySelectorAll('table tr > *[colspan="2"]');
-        colspanCols.forEach(col => {
-          col.style.transform = `translateX(${scrollLeft}px)`;
-        });
-      });
-    }
-    
     // 페이지 로드 시 데이터 불러오기
     window.onload = function() {
       loadData();
-
-      // 고정 열 문제 해결 함수 실행
-      setTimeout(fixStickyColumns, 100);
     };
 
     // 데이터 불러오기
@@ -1834,43 +1802,8 @@
       html += '</tr>';
       
       html += '</tbody></table></div>';
-      
+
       document.getElementById('content').innerHTML = html;
-      
-      // 테이블 렌더링 후 고정 열 스타일 강제 적용
-      setTimeout(() => {
-        // 모든 첫 번째 열에 스타일 적용
-        document.querySelectorAll('table tr > *:first-child').forEach(el => {
-          el.style.position = 'sticky';
-          el.style.left = '0';
-          el.style.zIndex = '10';
-          el.style.backgroundColor = '#f8f9fa';
-        });
-        
-        // 모든 두 번째 열에 스타일 적용 (colspan이 없는 경우)
-        document.querySelectorAll('table tr > *:nth-child(2):not([colspan])').forEach(el => {
-          el.style.position = 'sticky';
-          el.style.left = '30px';
-          el.style.zIndex = '9';
-          el.style.backgroundColor = '#f8f9fa';
-        });
-        
-        // colspan="2"인 셀에 스타일 적용
-        document.querySelectorAll('table tr > *[colspan="2"]').forEach(el => {
-          el.style.position = 'sticky';
-          el.style.left = '0';
-          el.style.zIndex = '11';
-          el.style.backgroundColor = '#f8f9fa';
-          el.style.width = '115px';
-        });
-        
-        // 헤더의 고정 열 스타일
-        document.querySelectorAll('thead tr > *:first-child, thead tr > *:nth-child(2), thead tr > *[colspan="2"]').forEach(el => {
-          el.style.backgroundColor = '#34495e';
-          el.style.color = 'white';
-          el.style.zIndex = '150';
-        });
-      }, 100);
       } catch (error) {
         console.error('Render table error:', error);
         handleError('테이블 렌더링 중 오류가 발생했습니다: ' + error.message);
