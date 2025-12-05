@@ -26,11 +26,10 @@ async function readAuthConfig() {
     const data = await fs.readFile(AUTH_CONFIG_PATH, 'utf8');
     return JSON.parse(data);
   } catch (error) {
-    // 파일이 없으면 환경변수 사용
+    // 파일이 없으면 기본값 사용 (admin2025)
     return {
-      passwordHash: process.env.ADMIN_PASSWORD_HASH ||
-        '$2a$10$XqJ5ZqJ5ZqJ5ZqJ5ZqJ5ZuJ5ZqJ5ZqJ5ZqJ5ZqJ5ZqJ5ZqJ5ZqJ5Z',
-      passwordHint: 'a*******3'
+      passwordHash: '$2a$10$WkgMxD1gLhh.ZMVbZtSz.ueOSTKCKCgQTf.flyKdBNZrHpWwywttq',
+      passwordHint: 'a*******5'
     };
   }
 }
@@ -48,7 +47,7 @@ router.get('/hint', async (req, res) => {
   try {
     const config = await readAuthConfig();
     res.json({
-      hint: config.passwordHint || 'a*******3'
+      hint: config.passwordHint || 'a*******5'
     });
   } catch (error) {
     console.error('Get hint error:', error);
