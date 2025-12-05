@@ -167,9 +167,11 @@ class ExcelParser {
    */
   processData(data) {
     const headers = data[0];
+    console.log('Excel Headers:', headers);
 
     // 컬럼 인덱스 찾기
     const colIndex = this.findColumnIndexes(headers);
+    console.log('Column Indexes:', colIndex);
 
     // 부서 구조 로드 (data/organization.json에서 로드하거나 기본값 사용)
     const deptStructure = this.getDefaultDeptStructure();
@@ -181,9 +183,21 @@ class ExcelParser {
     let processedCount = 0;
     let activeCount = 0;
 
+    console.log(`Total rows to process: ${data.length - 1}`);
+
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       const rowData = this.extractRowData(row, colIndex);
+
+      // 첫 몇 행의 데이터 샘플 출력
+      if (i <= 3) {
+        console.log(`Row ${i} sample:`, {
+          name: rowData.name,
+          status: rowData.status,
+          position: rowData.position,
+          dept: rowData.dept
+        });
+      }
 
       // 재직 상태 체크
       const isActive = rowData.status && (
@@ -191,6 +205,10 @@ class ExcelParser {
         rowData.status.includes('연구년') ||
         rowData.status.includes('휴직')
       );
+
+      if (i <= 3) {
+        console.log(`Row ${i} isActive:`, isActive);
+      }
 
       if (isActive && rowData.name) {
         activeCount++;
