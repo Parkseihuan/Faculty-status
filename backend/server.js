@@ -8,6 +8,9 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy (Render.com uses proxy)
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet()); // 보안 헤더 설정
 app.use(cors({

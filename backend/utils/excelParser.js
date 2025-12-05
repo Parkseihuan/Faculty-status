@@ -163,10 +163,45 @@ class ExcelParser {
   }
 
   /**
+   * 실제 헤더 행 찾기 (첫 행이 제목인 경우 대비)
+   */
+  findHeaderRow(data) {
+    // 필수 컬럼명들
+    const requiredColumns = ['성명', '직급', '소속', '대학', '재직구분'];
+
+    // 처음 5개 행을 검사
+    for (let i = 0; i < Math.min(5, data.length); i++) {
+      const row = data[i];
+      if (!row || row.length === 0) continue;
+
+      // 행에서 필수 컬럼이 몇 개나 있는지 확인
+      let matchCount = 0;
+      for (const col of requiredColumns) {
+        if (row.some(cell => cell && cell.toString().includes(col))) {
+          matchCount++;
+        }
+      }
+
+      // 필수 컬럼 중 3개 이상 있으면 헤더 행으로 간주
+      if (matchCount >= 3) {
+        console.log(`Header row found at index ${i}`);
+        return i;
+      }
+    }
+
+    // 못 찾으면 첫 번째 행 반환
+    return 0;
+  }
+
+  /**
    * 데이터 처리
    */
   processData(data) {
-    const headers = data[0];
+    // 실제 헤더 행 찾기
+    const headerRowIndex = this.findHeaderRow(data);
+    console.log(`Using row ${headerRowIndex} as headers`);
+
+    const headers = data[headerRowIndex];
     console.log('Excel Headers:', headers);
 
     // 컬럼 인덱스 찾기
@@ -183,15 +218,17 @@ class ExcelParser {
     let processedCount = 0;
     let activeCount = 0;
 
-    console.log(`Total rows to process: ${data.length - 1}`);
+    const dataStartRow = headerRowIndex + 1;
+    console.log(`Total rows to process: ${data.length - dataStartRow}`);
 
-    for (let i = 1; i < data.length; i++) {
+    for (let i = dataStartRow; i < data.length; i++) {
       const row = data[i];
       const rowData = this.extractRowData(row, colIndex);
 
       // 첫 몇 행의 데이터 샘플 출력
-      if (i <= 3) {
-        console.log(`Row ${i} sample:`, {
+      const rowNum = i - dataStartRow + 1;
+      if (rowNum <= 3) {
+        console.log(`Data row ${rowNum} (Excel row ${i + 1}) sample:`, {
           name: rowData.name,
           status: rowData.status,
           position: rowData.position,
@@ -206,8 +243,8 @@ class ExcelParser {
         rowData.status.includes('휴직')
       );
 
-      if (i <= 3) {
-        console.log(`Row ${i} isActive:`, isActive);
+      if (rowNum <= 3) {
+        console.log(`Data row ${rowNum} isActive:`, isActive);
       }
 
       if (isActive && rowData.name) {
