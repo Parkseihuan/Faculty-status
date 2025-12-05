@@ -1166,6 +1166,8 @@
     
     // 성공 처리
     function handleSuccess(data) {
+      console.log('Received data:', data);
+      console.log('Data keys:', Object.keys(data));
       globalData = data;
       renderTable();
     }
@@ -1591,8 +1593,21 @@
     
     // 테이블 렌더링
     function renderTable() {
-      const currentDate = new Date().toLocaleDateString('ko-KR');
-      const { facultyData, deptStructure, fullTimePositions, partTimePositions, otherPositions } = globalData;
+      try {
+        if (!globalData) {
+          handleError('데이터가 없습니다.');
+          return;
+        }
+
+        console.log('Rendering table with globalData:', globalData);
+        const currentDate = new Date().toLocaleDateString('ko-KR');
+        const { facultyData, deptStructure, fullTimePositions, partTimePositions, otherPositions } = globalData;
+
+        if (!facultyData || !deptStructure) {
+          console.error('Missing required data fields:', { facultyData, deptStructure });
+          handleError('데이터 구조가 올바르지 않습니다.');
+          return;
+        }
       
       let html = `
         <div class="table-container">
@@ -1871,6 +1886,10 @@
           el.style.zIndex = '150';
         });
       }, 100);
+      } catch (error) {
+        console.error('Render table error:', error);
+        handleError('테이블 렌더링 중 오류가 발생했습니다: ' + error.message);
+      }
     }
     
     // 합계 계산

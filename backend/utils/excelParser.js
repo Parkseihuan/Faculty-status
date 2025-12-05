@@ -1,9 +1,11 @@
 const ExcelJS = require('exceljs');
+const XLSX = require('xlsx');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * 엑셀 파일을 파싱하여 교원 데이터 추출
- * (기존 reference1의 processData 함수 기반)
- * 보안: ExcelJS 사용 (xlsx 취약점 대체)
+ * XLS (구 버전) 및 XLSX (신 버전) 모두 지원
  */
 class ExcelParser {
   constructor() {
@@ -47,45 +49,46 @@ class ExcelParser {
   }
 
   /**
-   * 엑셀 파일 파싱
+   * 파일 형식 감지 (XLS vs XLSX)
+   */
+  detectFileFormat(filePath) {
+    const ext = path.extname(filePath).toLowerCase();
+
+    // 확장자로 먼저 판단
+    if (ext === '.xls') return 'xls';
+    if (ext === '.xlsx') return 'xlsx';
+
+    // 파일 시그니처로 판단
+    try {
+      const buffer = fs.readFileSync(filePath);
+      // XLSX는 ZIP 파일 (PK 시그니처)
+      if (buffer[0] === 0x50 && buffer[1] === 0x4B) {
+        return 'xlsx';
+      }
+      // XLS는 다양한 시그니처를 가질 수 있음
+      return 'xls';
+    } catch (error) {
+      return 'unknown';
+    }
+  }
+
+  /**
+   * 엑셀 파일 파싱 (XLS 및 XLSX 지원)
    */
   async parseExcelFile(filePath) {
     try {
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.readFile(filePath);
+      const format = this.detectFileFormat(filePath);
+      console.log(`Detected file format: ${format}`);
 
-      // 첫 번째 시트 사용
-      const worksheet = workbook.worksheets[0];
+      let data = [];
 
-      if (!worksheet) {
-        throw new Error('엑셀 파일에 시트가 없습니다.');
+      if (format === 'xlsx') {
+        // XLSX: ExcelJS 사용 (더 안전)
+        data = await this.parseXLSXFile(filePath);
+      } else {
+        // XLS 또는 unknown: xlsx 라이브러리 사용
+        data = this.parseXLSFile(filePath);
       }
-
-      // 시트를 배열로 변환
-      const data = [];
-      worksheet.eachRow((row, rowNumber) => {
-        const rowData = [];
-        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-          // 셀 값 추출 (날짜 처리 포함)
-          let value = cell.value;
-
-          // 날짜 객체인 경우
-          if (value instanceof Date) {
-            value = this.toISODate(value);
-          }
-          // 수식 결과인 경우
-          else if (cell.type === ExcelJS.ValueType.Formula && cell.result) {
-            value = cell.result;
-          }
-          // 링크인 경우
-          else if (value && typeof value === 'object' && value.text) {
-            value = value.text;
-          }
-
-          rowData.push(value || '');
-        });
-        data.push(rowData);
-      });
 
       if (data.length === 0) {
         throw new Error('엑셀 파일이 비어있습니다.');
@@ -96,6 +99,67 @@ class ExcelParser {
       console.error('Excel parsing error:', error);
       throw new Error(`엑셀 파일 파싱 오류: ${error.message}`);
     }
+  }
+
+  /**
+   * XLSX 파일 파싱 (ExcelJS 사용)
+   */
+  async parseXLSXFile(filePath) {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(filePath);
+
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) {
+      throw new Error('엑셀 파일에 시트가 없습니다.');
+    }
+
+    const data = [];
+    worksheet.eachRow((row, rowNumber) => {
+      const rowData = [];
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        let value = cell.value;
+
+        if (value instanceof Date) {
+          value = this.toISODate(value);
+        } else if (cell.type === ExcelJS.ValueType.Formula && cell.result) {
+          value = cell.result;
+        } else if (value && typeof value === 'object' && value.text) {
+          value = value.text;
+        }
+
+        rowData.push(value || '');
+      });
+      data.push(rowData);
+    });
+
+    return data;
+  }
+
+  /**
+   * XLS 파일 파싱 (xlsx 라이브러리 사용)
+   */
+  parseXLSFile(filePath) {
+    const workbook = XLSX.readFile(filePath, {
+      type: 'file',
+      cellDates: true,
+      cellNF: false,
+      cellText: false
+    });
+
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) {
+      throw new Error('엑셀 파일에 시트가 없습니다.');
+    }
+
+    const worksheet = workbook.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: '',
+      raw: false,
+      dateNF: 'yyyy-mm-dd'
+    });
+
+    return data;
   }
 
   /**
