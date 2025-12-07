@@ -4,9 +4,13 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const connectDB = require('./config/db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// MongoDB 연결
+connectDB();
 
 // Trust proxy (Render.com uses proxy)
 app.set('trust proxy', 1);

@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs').promises;
-const path = require('path');
+const FacultyData = require('../models/FacultyData');
 
 /**
  * GET /api/faculty/data
@@ -10,28 +9,31 @@ const path = require('path');
  */
 router.get('/data', async (req, res) => {
   try {
-    const dataPath = path.join(__dirname, '../data/faculty-data.json');
+    // MongoDB에서 최신 데이터 조회
+    const latestData = await FacultyData.getLatest();
 
-    try {
-      const data = await fs.readFile(dataPath, 'utf-8');
-      const facultyData = JSON.parse(data);
-
-      res.json({
-        success: true,
-        data: facultyData,
-        lastUpdated: await getLastModifiedDate(dataPath)
+    if (!latestData) {
+      return res.status(404).json({
+        success: false,
+        error: '교원 데이터가 아직 업로드되지 않았습니다.',
+        data: null
       });
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        // 파일이 없는 경우
-        return res.status(404).json({
-          success: false,
-          error: '교원 데이터가 아직 업로드되지 않았습니다.',
-          data: null
-        });
-      }
-      throw error;
     }
+
+    // 응답 데이터 구성
+    const responseData = {
+      facultyData: latestData.facultyData,
+      deptStructure: latestData.deptStructure,
+      fullTimePositions: latestData.fullTimePositions,
+      partTimePositions: latestData.partTimePositions,
+      otherPositions: latestData.otherPositions
+    };
+
+    res.json({
+      success: true,
+      data: responseData,
+      lastUpdated: latestData.updatedAt
+    });
 
   } catch (error) {
     console.error('Faculty data retrieval error:', error);
@@ -48,29 +50,29 @@ router.get('/data', async (req, res) => {
  */
 router.get('/stats', async (req, res) => {
   try {
-    const dataPath = path.join(__dirname, '../data/faculty-data.json');
+    // MongoDB에서 최신 데이터 조회
+    const latestData = await FacultyData.getLatest();
 
-    try {
-      const data = await fs.readFile(dataPath, 'utf-8');
-      const facultyData = JSON.parse(data);
-
-      // 통계 계산
-      const stats = calculateStatistics(facultyData);
-
-      res.json({
-        success: true,
-        stats,
-        lastUpdated: await getLastModifiedDate(dataPath)
+    if (!latestData) {
+      return res.status(404).json({
+        success: false,
+        error: '교원 데이터가 아직 업로드되지 않았습니다.'
       });
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        return res.status(404).json({
-          success: false,
-          error: '교원 데이터가 아직 업로드되지 않았습니다.'
-        });
-      }
-      throw error;
     }
+
+    // 통계 계산
+    const stats = calculateStatistics({
+      facultyData: latestData.facultyData,
+      fullTimePositions: latestData.fullTimePositions,
+      partTimePositions: latestData.partTimePositions,
+      otherPositions: latestData.otherPositions
+    });
+
+    res.json({
+      success: true,
+      stats,
+      lastUpdated: latestData.updatedAt
+    });
 
   } catch (error) {
     console.error('Stats retrieval error:', error);
@@ -80,18 +82,6 @@ router.get('/stats', async (req, res) => {
     });
   }
 });
-
-/**
- * 파일의 마지막 수정 시간 가져오기
- */
-async function getLastModifiedDate(filePath) {
-  try {
-    const stats = await fs.stat(filePath);
-    return stats.mtime.toISOString();
-  } catch (error) {
-    return null;
-  }
-}
 
 /**
  * 통계 계산

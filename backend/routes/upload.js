@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const authMiddleware = require('../middleware/auth');
 const excelParser = require('../utils/excelParser');
+const FacultyData = require('../models/FacultyData');
 
 // Multer 설정 (파일 업로드)
 const storage = multer.diskStorage({
@@ -59,31 +60,18 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
     // 엑셀 파일 파싱 (async)
     const parsedData = await excelParser.parseExcelFile(req.file.path);
 
-    // 파싱된 데이터를 JSON 파일로 저장
-    const dataPath = path.join(__dirname, '../data/faculty-data.json');
-    await fs.writeFile(dataPath, JSON.stringify(parsedData, null, 2), 'utf-8');
-
-    // 업로드 기록 저장
-    const historyPath = path.join(__dirname, '../data/upload-history.json');
-    let history = [];
-
-    try {
-      const historyContent = await fs.readFile(historyPath, 'utf-8');
-      history = JSON.parse(historyContent);
-    } catch (error) {
-      // 파일이 없으면 새로 생성
-    }
-
-    history.unshift({
-      filename: req.file.originalname,
-      uploadedAt: new Date().toISOString(),
-      stats: parsedData.stats,
-      fileSize: req.file.size
+    // 파싱된 데이터를 MongoDB에 저장
+    const savedData = await FacultyData.updateData({
+      ...parsedData,
+      uploadInfo: {
+        filename: req.file.originalname,
+        uploadedAt: new Date(),
+        fileSize: req.file.size,
+        uploadedBy: req.user?.username || 'admin'
+      }
     });
 
-    // 최근 10개만 유지
-    history = history.slice(0, 10);
-    await fs.writeFile(historyPath, JSON.stringify(history, null, 2), 'utf-8');
+    console.log('✅ Faculty data saved to MongoDB:', savedData._id);
 
     // 업로드된 엑셀 파일 삭제 (보안)
     try {
@@ -95,8 +83,8 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
     res.json({
       success: true,
       message: '파일이 성공적으로 업로드되고 처리되었습니다.',
-      stats: parsedData.stats,
-      uploadedAt: new Date().toISOString()
+      stats: savedData.stats,
+      uploadedAt: savedData.uploadInfo.uploadedAt
     });
 
   } catch (error) {
@@ -124,22 +112,27 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
  */
 router.get('/history', authMiddleware, async (req, res) => {
   try {
-    const historyPath = path.join(__dirname, '../data/upload-history.json');
-    const historyContent = await fs.readFile(historyPath, 'utf-8');
-    const history = JSON.parse(historyContent);
+    // MongoDB에서 최근 10개의 업로드 기록 조회
+    const history = await FacultyData.find()
+      .sort({ 'uploadInfo.uploadedAt': -1 })
+      .limit(10)
+      .select('uploadInfo stats')
+      .lean();
+
+    // 형식 변환
+    const formattedHistory = history.map(item => ({
+      filename: item.uploadInfo?.filename || 'Unknown',
+      uploadedAt: item.uploadInfo?.uploadedAt || item.createdAt,
+      stats: item.stats,
+      fileSize: item.uploadInfo?.fileSize
+    }));
 
     res.json({
       success: true,
-      history
+      history: formattedHistory
     });
   } catch (error) {
-    if (error.code === 'ENOENT') {
-      return res.json({
-        success: true,
-        history: []
-      });
-    }
-
+    console.error('Get history error:', error);
     res.status(500).json({
       error: '업로드 기록을 불러오는 중 오류가 발생했습니다.'
     });
