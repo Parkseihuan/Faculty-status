@@ -4,8 +4,13 @@
 
 - GitHub 계정
 - Render.com 계정 (무료)
+- **MongoDB Atlas 계정 (무료)** ⭐ 필수!
 
 ## 🚀 Backend 배포 (Render.com)
+
+> ⚠️ **중요**: 백엔드 배포 전에 먼저 MongoDB Atlas를 설정해야 합니다!
+>
+> 📖 **[MongoDB Atlas 설정 가이드 보기](./MONGODB_SETUP.md)** ← 여기를 먼저 진행하세요!
 
 ### 1. Render.com 가입 및 연결
 
@@ -38,15 +43,20 @@
 
 **Environment Variables:**
 
-| Key | Value |
-|-----|-------|
-| `NODE_ENV` | `production` |
-| `PORT` | `10000` |
-| `JWT_SECRET` | (랜덤 문자열, 32자 이상 권장) |
-| `FRONTEND_URL` | `https://parkseihuan.github.io` |
-| `MAX_FILE_SIZE` | `10` |
+⚠️ **먼저 MongoDB Atlas를 설정하세요!** → [MongoDB 설정 가이드](./MONGODB_SETUP.md)
 
-> **중요**: `FRONTEND_URL`은 경로 없이 origin만 입력하세요! (`/Faculty-status` 제외)
+| Key | Value | 필수 여부 |
+|-----|-------|----------|
+| `MONGODB_URI` | MongoDB Atlas 연결 문자열 (예: `mongodb+srv://user:pass@cluster.mongodb.net/faculty-status`) | ⭐ **필수** |
+| `JWT_SECRET` | 랜덤 문자열, 32자 이상 권장 (예: `your-super-secret-key-32-chars-min`) | ⭐ **필수** |
+| `FRONTEND_URL` | `https://parkseihuan.github.io` | ⭐ **필수** |
+| `NODE_ENV` | `production` | 권장 |
+| `PORT` | `10000` | 선택 (Render가 자동 할당) |
+| `MAX_FILE_SIZE` | `10` | 선택 |
+
+> **중요**:
+> - `MONGODB_URI`는 MongoDB Atlas에서 발급받은 연결 문자열을 입력하세요
+> - `FRONTEND_URL`은 경로 없이 origin만 입력하세요! (`/Faculty-status` 제외)
 
 4. "Create Web Service" 클릭
 
