@@ -282,10 +282,10 @@ thead tr:not(:first-child) > *[colspan="2"] {
 }
 
 /* ========================================
-   9. 데이터 셀 스타일 - 흰색 배경
+   9. 데이터 셀 스타일 - 흰색 배경 (우선순위 높임)
    ======================================== */
-tbody td.names-cell,
-tbody td.position-cell {
+tbody tr > td.names-cell,
+tbody tr > td.position-cell {
   background-color: white !important;
   text-align: left;
   font-size: 11px;
