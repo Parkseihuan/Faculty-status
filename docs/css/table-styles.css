@@ -171,7 +171,7 @@ tr > *:first-child {
   left: 0 !important;
   z-index: 10 !important;
   background-color: #f8f9fa !important;
-  border-right: 2px solid #adb5bd !important;
+  border-right: 1px solid #dee2e6 !important;
 }
 
 /* 두 번째 열 고정 (colspan이 없는 경우) */
@@ -181,7 +181,7 @@ tr > *:nth-child(2):not([colspan]) {
   left: 30px !important;
   z-index: 9 !important;
   background-color: #f8f9fa !important;
-  border-right: 2px solid #adb5bd !important;
+  border-right: 1px solid #dee2e6 !important;
 }
 
 /* colspan="2"인 경우 */
@@ -191,17 +191,29 @@ tr > *[colspan="2"] {
   left: 0 !important;
   z-index: 10 !important;
   background-color: #f8f9fa !important;
-  border-right: 2px solid #adb5bd !important;
+  border-right: 1px solid #dee2e6 !important;
   width: 115px !important;
 }
 
-/* 헤더의 고정 열 */
-thead tr > *:first-child,
-thead tr > *:nth-child(2):not([colspan]),
-thead tr > *[colspan="2"] {
+/* 헤더의 고정 열 - 제목 행 (첫 번째 행만 어두운 배경) */
+thead tr:first-child > *:first-child,
+thead tr:first-child > *:nth-child(2):not([colspan]),
+thead tr:first-child > *[colspan="2"] {
   z-index: 150 !important;
   background-color: #495057 !important;
   color: white !important;
+  position: sticky !important;
+  position: -webkit-sticky !important;
+  top: 0 !important;
+}
+
+/* 헤더의 고정 열 - 나머지 행 (밝은 배경) */
+thead tr:not(:first-child) > *:first-child,
+thead tr:not(:first-child) > *:nth-child(2):not([colspan]),
+thead tr:not(:first-child) > *[colspan="2"] {
+  z-index: 150 !important;
+  background-color: #f8f9fa !important;
+  color: #2c3e50 !important;
   position: sticky !important;
   position: -webkit-sticky !important;
   top: 0 !important;
