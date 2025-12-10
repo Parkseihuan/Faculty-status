@@ -53,6 +53,8 @@ async function init() {
       }
     } catch (error) {
       console.error('Token verification failed:', error);
+      // 유효하지 않은 토큰 제거
+      api.logout();
     }
   }
 
