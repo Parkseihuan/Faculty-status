@@ -144,7 +144,7 @@ thead {
 }
 
 th {
-  background-color: #f8f9fa !important;
+  background-color: white !important;
   font-weight: bold;
   font-size: 12px;
   letter-spacing: 0.5px;
@@ -220,25 +220,25 @@ thead tr:not(:first-child) > *[colspan="2"] {
 }
 
 /* ========================================
-   7. 소계/합계 스타일 - 배경색 최소화
+   7. 소계/합계 스타일 - 배경색 제거
    ======================================== */
 .subtotal-full, tbody td.subtotal-full, thead th.subtotal-full {
-  background-color: #e9ecef !important;
-  color: #495057;
+  background-color: white !important;
+  color: #2c3e50;
   font-weight: bold;
   border: 1px solid #dee2e6 !important;
 }
 
 .subtotal-part, tbody td.subtotal-part, thead th.subtotal-part {
-  background-color: #e9ecef !important;
-  color: #495057;
+  background-color: white !important;
+  color: #2c3e50;
   font-weight: bold;
   border: 1px solid #dee2e6 !important;
 }
 
 .grand-total, tbody td.grand-total, thead th.grand-total {
-  background-color: #e9ecef !important;
-  color: #495057;
+  background-color: white !important;
+  color: #2c3e50;
   font-weight: bold;
   border: 1px solid #dee2e6 !important;
 }
@@ -265,6 +265,7 @@ thead tr:not(:first-child) > *[colspan="2"] {
   font-size: 12px;
   line-height: 1.4;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .dept-name {
@@ -297,16 +298,16 @@ tbody tr > td.position-cell {
 }
 
 /* ========================================
-   10. 합계 행 스타일
+   10. 합계 행 스타일 - 배경색 제거
    ======================================== */
 .total-row {
-  background-color: #f8f9fa !important;
+  background-color: white !important;
   font-weight: bold;
   font-size: 12px;
 }
 
 .total-row td {
-  background-color: #f8f9fa !important;
+  background-color: white !important;
   font-weight: bold;
   border: 1px solid #dee2e6 !important;
 }
