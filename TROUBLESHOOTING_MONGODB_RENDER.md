@@ -89,7 +89,7 @@ Description: Render.com Backend
 #### 연결 문자열 업데이트:
 
 ```
-mongodb+srv://faculty_admin:새비밀번호@faculty-status.ln58emh.mongodb.net/faculty-status?appName=faculty-status
+mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/faculty-status?appName=faculty-status
 ```
 
 **특수문자 URL 인코딩:**
@@ -125,13 +125,13 @@ MongoDB 연결 문자열에서 데이터베이스 이름이 제대로 지정되�
 
 ❌ **잘못된 형식 (test DB 사용됨):**
 ```
-mongodb+srv://faculty_admin:password@faculty-status.ln58emh.mongodb.net/?appName=faculty-status
-                                                                      ↑ 데이터베이스 이름 없음
+mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/?appName=faculty-status
+                                                                  ↑ 데이터베이스 이름 없음
 ```
 
 ✅ **올바른 형식 (faculty-status DB 사용):**
 ```
-mongodb+srv://faculty_admin:password@faculty-status.ln58emh.mongodb.net/faculty-status?appName=faculty-status
+mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/faculty-status?appName=faculty-status
                                                                       ↑ 데이터베이스 이름 지정
 ```
 
@@ -150,7 +150,7 @@ mongodb+srv://faculty_admin:password@faculty-status.ln58emh.mongodb.net/faculty-
 
 1. Render.com에서 `MONGODB_URI` 환경변수 수정:
    ```
-   mongodb+srv://faculty_admin:password@faculty-status.ln58emh.mongodb.net/faculty-status?appName=faculty-status
+   mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/faculty-status?appName=faculty-status
    ```
 
 2. Save Changes → 자동 재배포
@@ -195,7 +195,7 @@ mongodb+srv://faculty_admin:password@faculty-status.ln58emh.mongodb.net/faculty-
 
 브라우저 또는 curl로 테스트:
 ```bash
-curl https://faculty-status-backend-2s16.onrender.com/health
+curl https://YOUR-BACKEND-URL.onrender.com/health
 ```
 
 예상 응답:
@@ -241,7 +241,7 @@ curl https://faculty-status-backend-2s16.onrender.com/health
 
 | Key | Value | 설명 |
 |-----|-------|------|
-| `MONGODB_URI` | `mongodb+srv://faculty_admin:password@...` | MongoDB 연결 문자열 (필수) |
+| `MONGODB_URI` | `mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/faculty-status` | MongoDB 연결 문자열 (필수) |
 | `JWT_SECRET` | `your-super-secret-jwt-key-32-chars-min` | JWT 암호화 키 (필수) |
 | `FRONTEND_URL` | `https://parkseihuan.github.io` | GitHub Pages URL (필수) |
 | `NODE_ENV` | `production` | 프로덕션 환경 (권장) |
@@ -295,7 +295,7 @@ curl https://faculty-status-backend-2s16.onrender.com/health
 #### 관리자 페이지:
 
 1. https://parkseihuan.github.io/Faculty-status/admin.html
-2. 비밀번호: `admin2025`
+2. 비밀번호: `YOUR_ADMIN_PASSWORD` (기본값에서 변경 권장)
 3. "📤 엑셀 업로드" 탭
 4. 엑셀 파일 선택 및 업로드
 
@@ -442,7 +442,7 @@ Access to fetch at '...' from origin '...' has been blocked by CORS policy
                             ↓ API Requests
 ┌─────────────────────────────────────────────────────────────┐
 │   Backend (Render.com)                                       │
-│   https://faculty-status-backend-2s16.onrender.com          │
+│   https://YOUR-BACKEND-URL.onrender.com                      │
 │   - Node.js + Express                                        │
 │   - CORS 설정                                                │
 │   - JWT 인증                                                 │
