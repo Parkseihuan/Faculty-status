@@ -1,4 +1,40 @@
-/* Faculty Status Table - Completely Rebuilt */
+/* Google Material Design Style for Faculty Status Table */
+
+:root {
+  /* Material Design Color System */
+  --md-primary: #1a73e8; /* Google Blue */
+  --md-primary-dark: #1557b0;
+  --md-secondary: #5f6368; /* Google Grey 700 */
+  --md-background: #f8f9fa; /* Google Grey 50 */
+  --md-surface: #ffffff;
+  --md-error: #d93025; /* Google Red */
+  --md-warning: #f9ab00; /* Google Yellow */
+  --md-success: #1e8e3e; /* Google Green */
+  
+  /* Text Colors */
+  --text-primary: #202124; /* Google Grey 900 */
+  --text-secondary: #5f6368; /* Google Grey 700 */
+  --text-disabled: #dadce0; /* Google Grey 300 */
+  
+  /* Borders & Dividers */
+  --border-color: #dadce0;
+  
+  /* Shadows (Elevation) */
+  --shadow-1: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+  --shadow-2: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+  --shadow-3: 0 4px 8px 3px rgba(60,64,67,0.3), 0 1px 3px 0 rgba(60,64,67,0.15); /* Sticky header shadow */
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-pill: 50px;
+}
 
 * {
   margin: 0;
@@ -7,234 +43,307 @@
 }
 
 body {
-  font-family: 'Noto Sans KR', sans-serif;
-  padding: 10px;
-  background-color: #f5f7fa;
-  color: #000000;
+  font-family: 'Noto Sans KR', Roboto, sans-serif;
+  background-color: var(--md-background);
+  color: var(--text-primary);
+  font-size: 13px; /* Slightly larger for readability */
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding: var(--spacing-md);
 }
 
+/* Layout Container */
 .container {
   max-width: 100%;
   margin: 0 auto;
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  background-color: var(--md-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 40px); /* Full height minus padding */
+  overflow: hidden;
 }
 
-/* 컨트롤 */
+/* Controls Header */
 .controls {
-  margin-bottom: 15px;
+  padding: var(--spacing-md);
   display: flex;
   justify-content: space-between;
-  padding: 12px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--md-surface);
+  z-index: 200;
 }
 
 .controls-left, .controls-right {
   display: flex;
-  gap: 10px;
+  gap: var(--spacing-sm);
+  align-items: center;
 }
 
+/* Material Buttons */
 .btn {
-  padding: 8px 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  height: 36px;
+  background-color: var(--md-surface);
+  color: var(--md-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
   cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s;
+  transition: background-color 0.2s, box-shadow 0.2s, color 0.2s;
+  text-decoration: none;
 }
 
 .btn:hover {
-  background-color: #0056b3;
+  background-color: #f1f3f4; /* Light grey hover */
+  color: var(--md-primary-dark);
 }
 
-/* 테이블 컨테이너 */
+.btn:active {
+  background-color: #e8eaed;
+}
+
+.btn-primary {
+  background-color: var(--md-primary);
+  color: white;
+  border: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.btn-primary:hover {
+  background-color: var(--md-primary-dark);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Table Container */
 .table-container {
+  flex: 1; /* Take remaining height */
   overflow: auto;
-  width: 100%;
-  height: 70vh;
-  border: 2px solid #dee2e6;
-  border-radius: 4px;
+  position: relative;
+  background-color: var(--md-surface);
 }
 
+/* Scrollbar Styling */
 .table-container::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
 }
 
 .table-container::-webkit-scrollbar-thumb {
-  background: #adb5bd;
-  border-radius: 4px;
+  background: #c1c1c1;
+  border-radius: 5px;
 }
 
-/* 테이블 기본 */
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Table Styling */
 table {
-  width: 3095px !important;
-  border-collapse: collapse;
-  font-size: 11px;
+  width: 3095px !important; /* Fixed width as per requirement */
+  border-collapse: separate; /* Required for sticky headers to work well with borders */
+  border-spacing: 0;
   table-layout: fixed;
-  background-color: white;
+  background-color: var(--md-surface);
 }
 
 th, td {
-  border: 1px solid #dee2e6;
-  padding: 6px 8px;
+  padding: 10px 8px; /* More padding */
   text-align: center;
   vertical-align: middle;
-  background-color: white;
-  color: #000000;
+  border-bottom: 1px solid var(--border-color);
+  border-right: 1px solid transparent; /* Cleaner look, only bottom borders mostly */
 }
 
-/* 헤더 */
+/* Vertical dividers for major sections */
+th.subtotal-full, td.subtotal-full,
+th.subtotal-part, td.subtotal-part {
+  border-right: 1px solid var(--border-color);
+}
+
+/* Header Styling */
 thead {
   position: sticky;
   top: 0;
   z-index: 100;
+  background-color: var(--md-surface);
 }
 
 th {
-  font-weight: bold;
+  font-weight: 500;
+  color: var(--text-secondary);
   font-size: 12px;
-  color: #000000;
+  background-color: #f8f9fa; /* Light grey header */
+  border-bottom: 1px solid var(--border-color);
 }
 
-/* 제목 행 - 어두운 배경 */
+/* Main Title Row */
 thead tr:first-child th {
-  background-color: #495057 !important;
-  color: white !important;
+  background-color: var(--md-surface) !important;
+  color: var(--text-primary) !important;
   font-size: 18px;
-  padding: 15px;
-  z-index: 150;
+  font-weight: 400;
+  padding: 16px;
+  border-bottom: none;
 }
 
-/* 고정 열 - tbody만 회색 배경 */
-tbody tr > td:first-child {
+/* Sticky Columns */
+/* First column (Dept Group) */
+tbody tr > td:first-child,
+thead tr:not(:first-child) > th:first-child {
   position: sticky;
   left: 0;
   z-index: 10;
-  background-color: #f8f9fa !important;
-  border-right: 2px solid #adb5bd;
+  background-color: var(--md-surface) !important;
+  border-right: 1px solid var(--border-color);
+  box-shadow: 2px 0 4px -2px rgba(0,0,0,0.1); /* Subtle shadow separator */
 }
 
-tbody tr > td:nth-child(2):not([colspan]) {
+/* Second column (Dept Name) */
+tbody tr > td:nth-child(2),
+thead tr:not(:first-child) > th:nth-child(2) {
   position: sticky;
-  left: 30px;
+  left: 30px; /* Width of first column */
   z-index: 10;
-  background-color: #f8f9fa !important;
-  border-right: 2px solid #adb5bd;
+  background-color: var(--md-surface) !important;
+  border-right: 1px solid var(--border-color);
+  box-shadow: 2px 0 4px -2px rgba(0,0,0,0.1);
 }
 
-tbody tr > td[colspan="2"] {
-  position: sticky;
-  left: 0;
-  z-index: 10;
-  background-color: #f8f9fa !important;
-  border-right: 2px solid #adb5bd;
-}
-
-/* 헤더 고정 열 - 제목 제외 */
-thead tr:not(:first-child) > th:first-child,
-thead tr:not(:first-child) > th:nth-child(2):not([colspan]),
+/* Handle colspans in header for sticky columns */
 thead tr:not(:first-child) > th[colspan="2"] {
   position: sticky;
   left: 0;
-  z-index: 110;
+  z-index: 10;
   background-color: #f8f9fa !important;
-  color: #000000 !important;
+  border-right: 1px solid var(--border-color);
 }
 
-thead tr:not(:first-child) > th:nth-child(2):not([colspan]) {
-  left: 30px;
-}
-
-/* 부서명 */
+/* Dept Header Styling */
 .dept-header, .dept-vertical, .dept-name {
-  background-color: #f8f9fa !important;
-  color: #000000 !important;
-  font-weight: bold;
+  font-weight: 500;
+  color: var(--text-primary) !important;
 }
 
 .dept-vertical {
   writing-mode: vertical-rl;
-  white-space: nowrap;
-  min-height: 100px;
+  transform: rotate(180deg);
+  text-align: center;
+  padding: 10px 4px;
 }
 
 .dept-name {
   text-align: left;
-  white-space: normal;
+  padding-left: 12px;
 }
 
-/* 데이터 셀 - 흰색 강제 */
-tbody tr > td.names-cell,
-tbody tr > td.position-cell {
-  background-color: white !important;
-  text-align: left;
-  color: #000000 !important;
+/* Data Cells */
+tbody tr:hover td {
+  background-color: #f8f9fa !important; /* Row hover effect */
 }
 
-/* 소계/합계 - 흰색 */
-.subtotal-full, .subtotal-part, .grand-total,
-.total-row, .total-row td {
-  background-color: white !important;
-  color: #000000 !important;
-  font-weight: bold;
-}
-
-/* 이름 배지 */
+/* Name Badges (Chips) */
 .name-badge {
-  display: inline-block;
-  padding: 3px 6px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
   margin: 2px;
-  border-radius: 3px;
-  font-size: 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
-  border: 1px solid #dee2e6;
-  color: #000000;
-  background-color: white;
+  border: 1px solid #e0e0e0;
+  background-color: var(--md-surface);
+  color: var(--text-primary);
+  transition: all 0.2s;
 }
 
 .name-badge:hover {
-  background-color: #f8f9fa;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  background-color: #e8f0fe; /* Light blue hover */
+  color: var(--md-primary);
+  border-color: var(--md-primary);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
+/* Status Styles */
 .salary-bold {
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .status-leave {
-  color: #0066cc !important;
-  font-weight: bold;
+  color: var(--md-primary) !important; /* Blue for leave */
 }
 
 .status-research {
-  color: #009900 !important;
-  font-weight: bold;
+  color: var(--md-success) !important; /* Green for research */
 }
 
-/* 임용 종료일 색상 */
-.appointment-urgent { background-color: #dc3545 !important; color: white !important; }
-.appointment-warning { background-color: #fd7e14 !important; color: white !important; }
-.appointment-caution { background-color: #ffc107 !important; color: #000 !important; }
-.appointment-notice { background-color: #fff3cd !important; color: #000 !important; }
-.appointment-safe { background-color: transparent !important; }
-.retirement-upcoming { background-color: #d1ecf1 !important; color: #000 !important; }
+/* Appointment Status Chips */
+/* Using background colors for urgency */
+.appointment-urgent { 
+  background-color: #fce8e6 !important; 
+  color: #c5221f !important; 
+  border-color: #fce8e6;
+}
+.appointment-warning { 
+  background-color: #fef7e0 !important; 
+  color: #ea8600 !important; 
+  border-color: #fef7e0;
+}
+.appointment-caution { 
+  background-color: #fff8e1 !important; 
+  color: #f9ab00 !important; 
+  border-color: #fff8e1;
+}
+.appointment-notice { 
+  background-color: #f1f3f4 !important; 
+  color: var(--text-secondary) !important; 
+}
+.appointment-safe { 
+  /* Default style */
+}
+.retirement-upcoming { 
+  background-color: #e6f4ea !important; 
+  color: #137333 !important; 
+  border-color: #e6f4ea;
+}
 
+/* Info Tag inside Badge */
 .appointment-info {
-  font-size: 8px;
-  background-color: #6c757d;
-  color: white;
-  padding: 1px 4px;
-  border-radius: 2px;
-  margin-left: 3px;
+  font-size: 9px;
+  background-color: rgba(0,0,0,0.1);
+  color: inherit;
+  padding: 0 4px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-weight: 700;
 }
 
-/* 모달 */
+/* Totals */
+.subtotal-full, .subtotal-part, .grand-total {
+  background-color: #f8f9fa !important;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.total-row td {
+  background-color: #f1f3f4 !important;
+  font-weight: 700;
+  border-top: 2px solid var(--border-color);
+}
+
+/* Modal (Dialog) */
 .modal {
   display: none;
   position: fixed;
@@ -243,120 +352,145 @@ tbody tr > td.position-cell {
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.4);
+  background-color: rgba(0,0,0,0.5); /* Darker overlay */
+  backdrop-filter: blur(2px);
 }
 
 .modal-content {
-  background-color: white;
-  margin: 10% auto;
-  padding: 0;
-  width: 80%;
-  max-width: 600px;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  background-color: var(--md-surface);
+  margin: 10vh auto;
+  width: 90%;
+  max-width: 500px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-3);
+  overflow: hidden;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .modal-header {
+  padding: 16px 24px;
   display: flex;
   justify-content: space-between;
-  padding: 20px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
-  border-radius: 8px 8px 0 0;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h3 {
-  color: #000000;
-  font-size: 20px;
-}
-
-#modalBody {
-  padding: 20px;
-  color: #000000;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .modal-close {
-  font-size: 28px;
+  font-size: 24px;
+  color: var(--text-secondary);
   cursor: pointer;
-  color: #aaa;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
 }
 
 .modal-close:hover {
-  color: black;
+  background-color: #f1f3f4;
+  color: var(--text-primary);
+}
+
+#modalBody {
+  padding: 24px;
 }
 
 .modal-list {
   list-style: none;
-  padding: 0;
 }
 
 .modal-list li {
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
-  color: #000000;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f3f4;
+  display: flex;
+  align-items: baseline;
+}
+
+.modal-list li:last-child {
+  border-bottom: none;
 }
 
 .modal-list strong {
-  display: inline-block;
-  width: 120px;
-  color: #000000;
+  width: 140px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  flex-shrink: 0;
 }
 
-/* 주의사항 */
+/* Footnote (Snackbar-like or Bottom Sheet) */
 .footnote {
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  color: #000000;
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: #f1f3f4;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .footnote-header {
   cursor: pointer;
   display: flex;
-  justify-content: space-between;
-  font-weight: bold;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .footnote-content {
-  display: none;
-  margin-top: 10px;
-  color: #000000;
+  margin-top: var(--spacing-sm);
+  line-height: 1.8;
 }
 
-.footnote-content.show {
-  display: block;
-}
-
-.arrow {
-  transition: transform 0.3s;
-}
-
-.arrow.rotated {
-  transform: rotate(90deg);
-}
-
-/* 로딩/에러 */
+/* Loading & Error */
 .loading {
-  text-align: center;
-  padding: 60px;
-  font-size: 20px;
-  color: #000000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: var(--text-secondary);
+  font-size: 16px;
 }
 
 .error {
+  margin: 20px;
+  padding: 16px;
+  background-color: #fce8e6;
+  color: #c5221f;
+  border-radius: var(--radius-md);
   text-align: center;
-  padding: 40px;
-  color: #dc3545;
-  background-color: #f8d7da;
-  border-radius: 4px;
 }
 
-/* 인쇄 */
+/* Print Styles */
 @media print {
   @page { size: A3 landscape; margin: 5mm; }
+  body { padding: 0; background-color: white; }
+  .container { box-shadow: none; height: auto; overflow: visible; }
   .controls, .footnote { display: none !important; }
-  .table-container { overflow: visible !important; height: auto !important; }
-  table, th, td { font-size: 7px !important; padding: 2px !important; }
-  td:first-child, th:first-child, td:nth-child(2), th:nth-child(2) { position: static !important; }
+  .table-container { height: auto !important; overflow: visible !important; }
+  table { width: 100% !important; table-layout: auto !important; }
+  th, td { border: 1px solid #000 !important; font-size: 8px !important; padding: 2px !important; }
+  
+  /* Remove sticky behaviors for print */
+  thead, tbody tr > td:first-child, tbody tr > td:nth-child(2) {
+    position: static !important;
+    box-shadow: none !important;
+  }
+  
+  /* Ensure colors print */
+  .name-badge { border: 1px solid #ccc !important; }
+  .appointment-urgent { background-color: #dc3545 !important; color: white !important; -webkit-print-color-adjust: exact; }
+  .appointment-warning { background-color: #fd7e14 !important; color: white !important; -webkit-print-color-adjust: exact; }
 }
