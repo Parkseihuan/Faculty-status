@@ -448,9 +448,17 @@ class ExcelParser {
 
     // 3. 대학원 처리
     const graduateSchools = deptStructure[0].subDepts;
+    // 3-1. college가 대학원 이름인 경우 (예: college="스포츠과학대학원")
     if (graduateSchools.includes(college)) {
       if (result['대학원'][college] && result['대학원'][college][targetPosition]) {
         result['대학원'][college][targetPosition].push(nameInfo);
+        return true;
+      }
+    }
+    // 3-2. college가 "대학원"이고 dept가 구체적인 대학원 이름인 경우 (예: college="대학원", dept="스포츠과학대학원")
+    if (college === '대학원' && graduateSchools.includes(dept)) {
+      if (result['대학원'][dept] && result['대학원'][dept][targetPosition]) {
+        result['대학원'][dept][targetPosition].push(nameInfo);
         return true;
       }
     }
