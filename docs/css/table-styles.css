@@ -125,11 +125,42 @@ table {
   border-collapse: separate;
   border-spacing: 0;
   font-size: 14px;
-  table-layout: fixed;
+  table-layout: auto;
   background-color: white;
   border: 1px solid rgba(55, 53, 47, 0.09);
   border-radius: 4px;
   overflow: hidden;
+}
+
+/* 구분 열 너비 제한 */
+thead tr:nth-child(2) th:first-child {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+}
+
+thead tr:nth-child(2) th:nth-child(2) {
+  width: 140px;
+  min-width: 140px;
+  max-width: 180px;
+}
+
+tbody tr > td:first-child {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+}
+
+tbody tr > td:nth-child(2):not([colspan]) {
+  width: 140px;
+  min-width: 140px;
+  max-width: 180px;
+}
+
+tbody tr > td[colspan="2"] {
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
 }
 
 th,
@@ -152,29 +183,9 @@ th:last-child {
 /* ========================================
    6. 헤더 스타일 - Notion 스타일 + Sticky
    ======================================== */
-/* 제목 행 sticky */
-thead tr:first-child {
-  position: sticky;
-  top: 0;
-  z-index: 102;
-  background-color: white;
-}
-
-/* 컬럼 헤더 행 sticky - 제목 행 아래에 배치 */
-thead tr:nth-child(2) {
-  position: sticky;
-  top: 64px;
-  z-index: 101;
-  background-color: white;
-}
-
-/* Sticky 헤더에 그림자 추가 */
-thead tr:nth-child(2) th {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
+/* 기본 th 스타일 */
 th {
-  background-color: #f7f6f3;
+  background-color: white;
   font-weight: 500;
   font-size: 13px;
   color: rgba(55, 53, 47, 0.65);
@@ -184,25 +195,41 @@ th {
 
 /* 제목 행 */
 thead tr:first-child th {
+  position: sticky;
+  top: 0;
+  z-index: 102;
   background-color: white;
   color: #37352f;
   font-size: 20px;
   font-weight: 600;
   padding: 20px;
   border-bottom: 1px solid rgba(55, 53, 47, 0.09);
-  top: 0;
+}
+
+/* 컬럼 헤더 행 sticky */
+thead tr:nth-child(2) th {
+  position: sticky;
+  top: 64px;
+  z-index: 101;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* 구분 열만 음영 적용 */
+thead tr:nth-child(2) th:first-child,
+thead tr:nth-child(2) th:nth-child(2) {
+  background-color: #f7f6f3;
 }
 
 /* ========================================
    7. 행 Hover 효과 - Notion 스타일
    ======================================== */
-tbody tr:hover td {
-  background-color: rgba(55, 53, 47, 0.03);
-}
+/* Hover 효과는 섹션 8에서 구분 열과 일반 열을 분리하여 처리 */
 
 /* ========================================
-   8. 고정 컬럼
+   8. 고정 컬럼 (구분)
    ======================================== */
+/* 첫 번째 열 고정 */
 tbody tr > td:first-child,
 thead tr:not(:first-child) > th:first-child {
   position: sticky;
@@ -212,29 +239,35 @@ thead tr:not(:first-child) > th:first-child {
   box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.04);
 }
 
+/* 두 번째 열 고정 */
 tbody tr > td:nth-child(2):not([colspan]),
 thead tr:not(:first-child) > th:nth-child(2):not([colspan]) {
   position: sticky;
-  left: 40px;
+  left: 80px;
   z-index: 10;
   background-color: #f7f6f3;
   box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.04);
 }
 
+/* colspan="2"인 구분 열 */
 tbody tr > td[colspan="2"],
 thead tr:not(:first-child) > th[colspan="2"] {
   position: sticky;
   left: 0;
   z-index: 10;
   background-color: #f7f6f3;
-  width: 140px;
   box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.04);
 }
 
-/* Hover 시 고정 컬럼도 배경색 변경 */
+/* Hover 시 구분 컬럼 배경색 살짝 어둡게 */
 tbody tr:hover > td:first-child,
-tbody tr:hover > td:nth-child(2),
+tbody tr:hover > td:nth-child(2):not([colspan]),
 tbody tr:hover > td[colspan="2"] {
+  background-color: rgba(55, 53, 47, 0.08);
+}
+
+/* 다른 셀 hover */
+tbody tr:hover > td:not(:first-child):not(:nth-child(2)):not([colspan]) {
   background-color: rgba(55, 53, 47, 0.03);
 }
 
