@@ -125,42 +125,33 @@ table {
   border-collapse: separate;
   border-spacing: 0;
   font-size: 14px;
-  table-layout: auto;
+  table-layout: fixed;
   background-color: white;
   border: 1px solid rgba(55, 53, 47, 0.09);
   border-radius: 4px;
-  overflow: hidden;
+  overflow: visible;
 }
 
-/* 구분 열 너비 제한 */
-thead tr:nth-child(2) th:first-child {
-  width: 80px;
-  min-width: 80px;
-  max-width: 80px;
-}
-
-thead tr:nth-child(2) th:nth-child(2) {
-  width: 140px;
-  min-width: 140px;
-  max-width: 180px;
-}
-
+/* 열 너비 설정 */
+/* 구분 열 - 좁게 */
+thead tr:nth-child(2) th:first-child,
 tbody tr > td:first-child {
   width: 80px;
-  min-width: 80px;
-  max-width: 80px;
 }
 
+thead tr:nth-child(2) th:nth-child(2),
 tbody tr > td:nth-child(2):not([colspan]) {
-  width: 140px;
-  min-width: 140px;
-  max-width: 180px;
+  width: 180px;
 }
 
 tbody tr > td[colspan="2"] {
-  width: 220px;
-  min-width: 220px;
-  max-width: 220px;
+  width: 260px;
+}
+
+/* 데이터 열 - 모두 동일한 너비 */
+thead tr:nth-child(2) th:nth-child(n+3),
+tbody tr > td:nth-child(n+3) {
+  width: 150px;
 }
 
 th,
@@ -170,7 +161,7 @@ td {
   vertical-align: middle;
   border-bottom: 1px solid rgba(55, 53, 47, 0.09);
   border-right: 1px solid rgba(55, 53, 47, 0.09);
-  background-color: white;
+  background-color: white !important;
   white-space: normal;
   word-wrap: break-word;
 }
@@ -181,7 +172,7 @@ th:last-child {
 }
 
 /* ========================================
-   6. 헤더 스타일 - Notion 스타일 + Sticky
+   6. 헤더 스타일 - Sticky 컬럼 헤더만
    ======================================== */
 /* 기본 th 스타일 */
 th {
@@ -190,13 +181,11 @@ th {
   color: rgba(55, 53, 47, 0.65);
   text-transform: none;
   white-space: nowrap;
+  background-color: white !important;
 }
 
-/* 제목 행 - Sticky Top */
+/* 제목 행 - Sticky 없음 */
 thead tr:first-child th {
-  position: sticky;
-  top: 0;
-  z-index: 102;
   background-color: white !important;
   color: #37352f;
   font-size: 20px;
@@ -205,86 +194,25 @@ thead tr:first-child th {
   border-bottom: 1px solid rgba(55, 53, 47, 0.09);
 }
 
-/* 컬럼 헤더 행 - Sticky Top (모든 컬럼 헤더) */
+/* 컬럼 헤더 행만 Sticky */
 thead tr:nth-child(2) th {
   position: sticky;
-  top: 61px;
+  top: 0;
   z-index: 100;
   background-color: white !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* ========================================
-   7. 행 Hover 효과 - Notion 스타일
+   7. 행 Hover 효과 - 제거
    ======================================== */
-/* Hover 효과는 섹션 8에서 구분 열과 일반 열을 분리하여 처리 */
+/* 모든 hover 효과 제거 - 배경색 없음 */
 
 /* ========================================
-   8. 고정 컬럼 (구분) - Sticky Left
-   ======================================== */
-/* 첫 번째 열 - Sticky Left + 음영 */
-tbody tr > td:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 9;
-  background-color: #f7f6f3 !important;
-  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
-}
-
-/* 두 번째 열 - Sticky Left + 음영 */
-tbody tr > td:nth-child(2):not([colspan]) {
-  position: sticky;
-  left: 80px;
-  z-index: 9;
-  background-color: #f7f6f3 !important;
-  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
-}
-
-/* colspan="2"인 구분 열 - Sticky Left + 음영 */
-tbody tr > td[colspan="2"] {
-  position: sticky;
-  left: 0;
-  z-index: 9;
-  background-color: #f7f6f3 !important;
-  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
-}
-
-/* 헤더의 구분 열 - Sticky Left + Top (우선순위 높음) + 음영 */
-thead tr:nth-child(2) th:first-child {
-  position: sticky;
-  left: 0;
-  top: 61px;
-  z-index: 103;
-  background-color: #f7f6f3 !important;
-  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
-}
-
-thead tr:nth-child(2) th:nth-child(2) {
-  position: sticky;
-  left: 80px;
-  top: 61px;
-  z-index: 103;
-  background-color: #f7f6f3 !important;
-  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
-}
-
-/* Hover 효과 - 구분 열 */
-tbody tr:hover > td:first-child,
-tbody tr:hover > td:nth-child(2):not([colspan]),
-tbody tr:hover > td[colspan="2"] {
-  background-color: rgba(55, 53, 47, 0.12) !important;
-}
-
-/* Hover 효과 - 일반 셀 */
-tbody tr:hover > td:not(:first-child):not(:nth-child(2)):not([colspan]) {
-  background-color: rgba(55, 53, 47, 0.03) !important;
-}
-
-/* ========================================
-   9. 부서명 스타일
+   9. 부서명 스타일 - 배경색 제거
    ======================================== */
 .dept-header {
-  background-color: #f7f6f3;
+  background-color: white !important;
   font-weight: 600;
   font-size: 14px;
   color: #37352f;
@@ -301,7 +229,7 @@ tbody tr:hover > td:not(:first-child):not(:nth-child(2)):not([colspan]) {
   text-align: left;
   padding-left: 12px;
   font-weight: 500;
-  background-color: #f7f6f3;
+  background-color: white !important;
   color: #37352f;
   white-space: nowrap;
   overflow: visible;
@@ -314,28 +242,29 @@ tbody tr:hover > td:not(:first-child):not(:nth-child(2)):not([colspan]) {
   text-align: left;
   padding: 8px 12px;
   line-height: 1.6;
+  background-color: white !important;
 }
 
 /* ========================================
-   11. 소계 및 합계
+   11. 소계 및 합계 - 배경색 제거
    ======================================== */
 .subtotal-full,
 .subtotal-part,
 .grand-total {
-  background-color: rgba(55, 53, 47, 0.04);
+  background-color: white !important;
   font-weight: 600;
   color: #37352f;
 }
 
 .total-row td {
-  background-color: #f7f6f3;
+  background-color: white !important;
   font-weight: 600;
   border-top: 2px solid rgba(55, 53, 47, 0.16);
   color: #37352f;
 }
 
 /* ========================================
-   12. 이름 배지 - Notion 태그 스타일
+   12. 이름 배지 - 색상 코딩만 유지
    ======================================== */
 .name-badge {
   display: inline-flex;
@@ -345,14 +274,14 @@ tbody tr:hover > td:not(:first-child):not(:nth-child(2)):not([colspan]) {
   border-radius: 4px;
   font-size: 13px;
   cursor: pointer;
-  background-color: rgba(55, 53, 47, 0.06);
+  background-color: transparent;
   color: #37352f;
   transition: all 0.15s ease;
   border: none;
 }
 
 .name-badge:hover {
-  background-color: rgba(55, 53, 47, 0.12);
+  opacity: 0.8;
 }
 
 /* 연봉제 교원 */
@@ -389,12 +318,12 @@ tbody tr:hover > td:not(:first-child):not(:nth-child(2)):not([colspan]) {
 }
 
 .appointment-notice {
-  background-color: rgba(253, 236, 200, 0.3);
-  color: #837a75;
+  background-color: transparent;
+  color: #37352f;
 }
 
 .appointment-safe {
-  background-color: rgba(55, 53, 47, 0.06);
+  background-color: transparent;
   color: #37352f;
 }
 
@@ -406,7 +335,7 @@ tbody tr:hover > td:not(:first-child):not(:nth-child(2)):not([colspan]) {
 /* 개월 수 표시 */
 .appointment-info {
   font-size: 11px;
-  background-color: rgba(55, 53, 47, 0.15);
+  background-color: transparent;
   color: #37352f;
   padding: 1px 5px;
   border-radius: 3px;
