@@ -1,5 +1,6 @@
 /* ========================================
-   관리자 페이지 스타일시트 - 깔끔하고 간결한 디자인
+   Notion 스타일 관리자 페이지
+   Tailwind CSS 기반 깔끔한 디자인
    ======================================== */
 
 /* ========================================
@@ -12,9 +13,9 @@
 }
 
 body {
-  font-family: 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
-  background-color: #f5f7fa;
-  color: #2c3e50;
+  font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #f7f6f3;
+  color: #37352f;
   min-height: 100vh;
   line-height: 1.5;
 }
@@ -33,11 +34,11 @@ body {
 }
 
 /* ========================================
-   3. 헤더
+   3. 헤더 - Notion 스타일
    ======================================== */
 header {
   background-color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   margin-bottom: 24px;
   position: sticky;
   top: 0;
@@ -52,135 +53,131 @@ header .container {
 }
 
 header h1 {
-  font-size: 22px;
-  color: #2c3e50;
-  font-weight: 500;
+  font-size: 20px;
+  color: #37352f;
+  font-weight: 600;
 }
 
 .header-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
 }
 
 /* ========================================
-   4. 버튼
+   4. 버튼 - Notion 스타일
    ======================================== */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 16px;
-  height: 36px;
-  border: none;
+  padding: 6px 12px;
+  height: 32px;
+  border: 1px solid rgba(55, 53, 47, 0.16);
   border-radius: 4px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: 'Noto Sans KR', sans-serif;
+  transition: all 0.15s ease;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
   text-decoration: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  color: #37352f;
 }
 
 .btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background-color: rgba(55, 53, 47, 0.04);
 }
 
 .btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: rgba(55, 53, 47, 0.08);
 }
 
 .btn-primary {
-  background-color: #007bff;
+  background-color: #37352f;
   color: white;
+  border: none;
 }
 
 .btn-primary:hover {
-  background-color: #0056b3;
+  background-color: #2f2d28;
 }
 
 .btn-secondary {
   background-color: white;
-  color: #007bff;
-  border: 1px solid #dee2e6;
-}
-
-.btn-secondary:hover {
-  background-color: #f8f9fa;
-  border-color: #6c757d;
+  color: #37352f;
 }
 
 .btn-success {
-  background-color: #28a745;
+  background-color: #448361;
   color: white;
+  border: none;
 }
 
 .btn-success:hover {
-  background-color: #218838;
+  background-color: #3a6f52;
 }
 
 .btn-danger {
-  background-color: #dc3545;
+  background-color: #d44c47;
   color: white;
+  border: none;
 }
 
 .btn-danger:hover {
-  background-color: #c82333;
+  background-color: #c13d39;
 }
 
 .btn-sm {
   height: 28px;
-  padding: 0 12px;
-  font-size: 12px;
+  padding: 4px 10px;
+  font-size: 13px;
 }
 
 .btn:disabled {
-  background-color: #e9ecef;
-  color: #6c757d;
+  background-color: rgba(55, 53, 47, 0.04);
+  color: rgba(55, 53, 47, 0.35);
   cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
+  border-color: rgba(55, 53, 47, 0.09);
 }
 
 /* ========================================
-   5. 탭 메뉴
+   5. 탭 메뉴 - Notion 스타일
    ======================================== */
 .tabs {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   margin-bottom: 24px;
-  border-bottom: 2px solid #dee2e6;
+  border-bottom: 1px solid rgba(55, 53, 47, 0.09);
   padding-bottom: 0;
 }
 
 .tab-btn {
-  padding: 12px 24px;
+  padding: 8px 16px;
   border: none;
   background: transparent;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  color: #6c757d;
-  border-bottom: 3px solid transparent;
-  transition: all 0.2s ease;
-  font-family: 'Noto Sans KR', sans-serif;
-  margin-bottom: -2px;
+  color: rgba(55, 53, 47, 0.65);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
+  margin-bottom: -1px;
+  border-radius: 4px 4px 0 0;
 }
 
 .tab-btn:hover {
-  color: #007bff;
-  background-color: #f8f9fa;
+  color: #37352f;
+  background-color: rgba(55, 53, 47, 0.04);
 }
 
 .tab-btn.active {
-  color: #007bff;
-  border-bottom-color: #007bff;
+  color: #37352f;
+  border-bottom-color: #37352f;
+  background-color: transparent;
 }
 
-/* 탭 컨텐츠 */
 .tab-content {
   min-height: 400px;
 }
@@ -194,40 +191,40 @@ header h1 {
 }
 
 /* ========================================
-   6. 카드
+   6. 카드 - Notion 스타일
    ======================================== */
 .card {
   background-color: white;
   padding: 32px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   margin-bottom: 24px;
-  border: 1px solid #dee2e6;
+  border: 1px solid rgba(55, 53, 47, 0.09);
 }
 
 .card h2 {
   margin-bottom: 8px;
-  font-size: 20px;
-  font-weight: 500;
-  color: #2c3e50;
+  font-size: 18px;
+  font-weight: 600;
+  color: #37352f;
 }
 
 .description {
-  color: #6c757d;
+  color: rgba(55, 53, 47, 0.65);
   margin-bottom: 24px;
   font-size: 14px;
   line-height: 1.6;
 }
 
 .info-text {
-  color: #6c757d;
+  color: rgba(55, 53, 47, 0.45);
   text-align: center;
   padding: 40px;
   font-size: 14px;
 }
 
 /* ========================================
-   7. 폼
+   7. 폼 - Notion 스타일
    ======================================== */
 .form-group {
   margin-bottom: 20px;
@@ -237,31 +234,37 @@ header h1 {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: #2c3e50;
+  color: #37352f;
   font-size: 14px;
 }
 
 .form-group input {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #dee2e6;
+  padding: 8px 12px;
+  border: 1px solid rgba(55, 53, 47, 0.16);
   border-radius: 4px;
   font-size: 14px;
-  transition: border-color 0.2s ease;
-  font-family: 'Noto Sans KR', sans-serif;
+  transition: all 0.15s ease;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
+  background-color: white;
+  color: #37352f;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  border-color: #37352f;
+  box-shadow: 0 0 0 1px #37352f;
+}
+
+.form-group input:hover {
+  border-color: rgba(55, 53, 47, 0.24);
 }
 
 .form-hint {
   display: block;
-  margin-top: 4px;
+  margin-top: 6px;
   font-size: 12px;
-  color: #6c757d;
+  color: rgba(55, 53, 47, 0.65);
 }
 
 .settings-form {
@@ -269,50 +272,50 @@ header h1 {
 }
 
 /* ========================================
-   8. 업로드 영역
+   8. 업로드 영역 - Notion 스타일
    ======================================== */
 .upload-area {
-  border: 2px dashed #dee2e6;
+  border: 2px dashed rgba(55, 53, 47, 0.16);
   border-radius: 8px;
   padding: 48px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-  background-color: #f8f9fa;
+  transition: all 0.15s ease;
+  background-color: rgba(55, 53, 47, 0.02);
 }
 
 .upload-area:hover,
 .upload-area.dragover {
-  border-color: #007bff;
-  background-color: #e7f3ff;
+  border-color: #37352f;
+  background-color: rgba(55, 53, 47, 0.04);
 }
 
 .upload-icon {
   font-size: 48px;
   margin-bottom: 16px;
-  color: #007bff;
+  color: rgba(55, 53, 47, 0.45);
 }
 
 .upload-area p {
-  color: #6c757d;
+  color: rgba(55, 53, 47, 0.65);
   margin-bottom: 16px;
   font-size: 14px;
 }
 
 /* ========================================
-   9. 파일 정보
+   9. 파일 정보 - Notion 스타일
    ======================================== */
 .file-info {
-  background-color: #e7f3ff;
+  background-color: rgba(55, 53, 47, 0.04);
   padding: 16px;
   border-radius: 4px;
   margin: 20px 0;
-  border: 1px solid #b3d9ff;
+  border: 1px solid rgba(55, 53, 47, 0.09);
 }
 
 .file-info p {
   margin-bottom: 8px;
-  color: #2c3e50;
+  color: #37352f;
   font-size: 14px;
 }
 
@@ -328,8 +331,8 @@ header h1 {
 }
 
 .progress-bar {
-  height: 4px;
-  background: #e9ecef;
+  height: 3px;
+  background: rgba(55, 53, 47, 0.09);
   border-radius: 2px;
   overflow: hidden;
   position: relative;
@@ -339,7 +342,7 @@ header h1 {
   content: '';
   display: block;
   height: 100%;
-  background-color: #007bff;
+  background-color: #37352f;
   animation: loading 1.5s ease-in-out infinite;
 }
 
@@ -361,13 +364,13 @@ header h1 {
 .progress-text {
   text-align: center;
   margin-top: 8px;
-  color: #007bff;
-  font-size: 12px;
+  color: rgba(55, 53, 47, 0.65);
+  font-size: 13px;
   font-weight: 500;
 }
 
 /* ========================================
-   11. 결과 메시지
+   11. 결과 메시지 - Notion 스타일
    ======================================== */
 .result {
   padding: 16px;
@@ -377,20 +380,20 @@ header h1 {
 }
 
 .result.success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background-color: rgba(68, 131, 97, 0.15);
+  color: #2b6a4b;
+  border: 1px solid rgba(68, 131, 97, 0.2);
 }
 
 .result.error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background-color: rgba(235, 87, 87, 0.15);
+  color: #d44c47;
+  border: 1px solid rgba(235, 87, 87, 0.2);
 }
 
 .error-message {
   margin-top: 12px;
-  color: #dc3545;
+  color: #d44c47;
   font-size: 13px;
 }
 
@@ -407,7 +410,7 @@ header h1 {
 .org-editor {
   max-height: 500px;
   overflow-y: auto;
-  border: 1px solid #dee2e6;
+  border: 1px solid rgba(55, 53, 47, 0.09);
   border-radius: 4px;
   padding: 16px;
   background-color: white;
@@ -415,10 +418,15 @@ header h1 {
 
 .org-item {
   background-color: white;
-  border: 1px solid #dee2e6;
+  border: 1px solid rgba(55, 53, 47, 0.09);
   border-radius: 4px;
   margin-bottom: 12px;
   padding: 12px;
+  transition: box-shadow 0.15s ease;
+}
+
+.org-item:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .org-item-header {
@@ -436,7 +444,7 @@ header h1 {
 .sub-depts {
   padding-left: 24px;
   margin-top: 8px;
-  border-left: 3px solid #f8f9fa;
+  border-left: 2px solid rgba(55, 53, 47, 0.09);
 }
 
 .sub-dept-item {
@@ -459,34 +467,35 @@ header h1 {
 
 .history-item {
   background-color: white;
-  border: 1px solid #dee2e6;
+  border: 1px solid rgba(55, 53, 47, 0.09);
   border-radius: 4px;
   padding: 16px;
   margin-bottom: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: box-shadow 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .history-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  border-color: rgba(55, 53, 47, 0.16);
 }
 
 .history-item-header h3 {
   font-size: 14px;
   font-weight: 500;
-  color: #2c3e50;
+  color: #37352f;
   margin-bottom: 4px;
 }
 
 .history-item-time {
-  font-size: 12px;
-  color: #6c757d;
+  font-size: 13px;
+  color: rgba(55, 53, 47, 0.65);
 }
 
 /* ========================================
-   14. 모달
+   14. 모달 - Notion 스타일
    ======================================== */
 .modal {
   position: fixed;
@@ -494,19 +503,19 @@ header h1 {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(15, 15, 15, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(4px);
 }
 
 .modal-content {
   background: white;
   padding: 40px;
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   width: 100%;
   max-width: 400px;
   animation: modalFadeIn 0.2s ease-out;
@@ -526,8 +535,8 @@ header h1 {
 .login-modal h2 {
   text-align: center;
   margin-bottom: 24px;
-  color: #007bff;
-  font-weight: 500;
+  color: #37352f;
+  font-weight: 600;
 }
 
 /* ========================================
@@ -536,29 +545,29 @@ header h1 {
 .password-hint {
   margin-top: 8px;
   font-size: 12px;
-  color: #6c757d;
+  color: rgba(55, 53, 47, 0.65);
 }
 
 .hint-display {
   padding: 12px;
-  background-color: #f8f9fa;
+  background-color: rgba(55, 53, 47, 0.04);
   border-radius: 4px;
-  font-family: monospace;
+  font-family: 'Consolas', 'Monaco', monospace;
   text-align: center;
-  color: #2c3e50;
-  border: 1px solid #dee2e6;
+  color: #37352f;
+  border: 1px solid rgba(55, 53, 47, 0.09);
 }
 
 /* ========================================
-   16. 푸터
+   16. 푸터 - Notion 스타일
    ======================================== */
 footer {
   margin-top: 40px;
   padding: 24px;
   text-align: center;
-  color: #6c757d;
+  color: rgba(55, 53, 47, 0.45);
   font-size: 12px;
-  border-top: 1px solid #dee2e6;
+  border-top: 1px solid rgba(55, 53, 47, 0.09);
   background-color: white;
 }
 
@@ -585,14 +594,15 @@ footer {
 
   .tab-btn {
     text-align: left;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid rgba(55, 53, 47, 0.09);
     border-left: 3px solid transparent;
     margin-bottom: 0;
+    border-radius: 0;
   }
 
   .tab-btn.active {
-    border-bottom: 1px solid #dee2e6;
-    border-left-color: #007bff;
+    border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+    border-left-color: #37352f;
   }
 
   .card {

@@ -1,5 +1,6 @@
 /* ========================================
-   교원 현황표 스타일시트 - 깔끔하고 간결한 디자인
+   Notion 스타일 교원 현황표
+   Tailwind CSS 기반 깔끔한 디자인
    ======================================== */
 
 /* ========================================
@@ -12,25 +13,25 @@
 }
 
 body {
-  font-family: 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
-  padding: 10px;
-  background-color: #f5f7fa;
-  color: #2c3e50;
+  font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #f7f6f3;
+  color: #37352f;
   line-height: 1.5;
+  padding: 40px 20px;
 }
 
 /* ========================================
-   2. 컨테이너 레이아웃
+   2. 컨테이너 - Notion 카드 스타일
    ======================================== */
 .container {
   max-width: 100%;
   margin: 0 auto;
   background-color: white;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 20px);
+  min-height: calc(100vh - 80px);
   overflow: hidden;
 }
 
@@ -38,54 +39,50 @@ body {
    3. 컨트롤 버튼 영역
    ======================================== */
 .controls {
-  padding: 15px;
+  padding: 16px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f8f9fa;
-  border-bottom: 2px solid #dee2e6;
-  flex-shrink: 0;
+  border-bottom: 1px solid #e9e9e7;
+  background-color: white;
 }
 
 .controls-left,
 .controls-right {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
 .btn {
-  padding: 8px 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  height: 32px;
+  background-color: white;
+  color: #37352f;
+  border: 1px solid rgba(55, 53, 47, 0.16);
   border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.15s ease;
   text-decoration: none;
-  display: inline-block;
 }
 
 .btn:hover {
-  background-color: #0056b3;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: rgba(55, 53, 47, 0.04);
 }
 
 .btn-primary {
-  background-color: #28a745;
+  background-color: #37352f;
+  color: white;
+  border: none;
 }
 
 .btn-primary:hover {
-  background-color: #218838;
+  background-color: #2f2d28;
 }
 
 /* ========================================
@@ -96,27 +93,27 @@ body {
   overflow: auto;
   position: relative;
   background-color: white;
-  scrollbar-width: thin;
-  scrollbar-color: #adb5bd #f8f9fa;
+  padding: 24px;
 }
 
+/* Notion 스타일 스크롤바 */
 .table-container::-webkit-scrollbar {
   width: 12px;
   height: 12px;
 }
 
 .table-container::-webkit-scrollbar-track {
-  background: #f8f9fa;
-  border-radius: 4px;
+  background: transparent;
 }
 
 .table-container::-webkit-scrollbar-thumb {
-  background: #adb5bd;
-  border-radius: 4px;
+  background: rgba(55, 53, 47, 0.16);
+  border-radius: 6px;
+  border: 3px solid white;
 }
 
 .table-container::-webkit-scrollbar-thumb:hover {
-  background: #6c757d;
+  background: rgba(55, 53, 47, 0.24);
 }
 
 /* ========================================
@@ -124,25 +121,35 @@ body {
    ======================================== */
 table {
   width: 3095px !important;
-  border-collapse: collapse;
-  font-size: 11px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
   table-layout: fixed;
   background-color: white;
+  border: 1px solid rgba(55, 53, 47, 0.09);
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 th,
 td {
-  border: 1px solid #dee2e6;
-  padding: 8px;
+  padding: 8px 12px;
   text-align: center;
   vertical-align: middle;
+  border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+  border-right: 1px solid rgba(55, 53, 47, 0.09);
   background-color: white;
   white-space: normal;
   word-wrap: break-word;
 }
 
+td:last-child,
+th:last-child {
+  border-right: none;
+}
+
 /* ========================================
-   6. 헤더 스타일
+   6. 헤더 스타일 - Notion 스타일
    ======================================== */
 thead {
   position: sticky;
@@ -152,73 +159,76 @@ thead {
 }
 
 th {
-  background-color: white;
-  font-weight: 600;
-  font-size: 12px;
-  color: #2c3e50;
-  border: 1px solid #dee2e6;
+  background-color: #f7f6f3;
+  font-weight: 500;
+  font-size: 13px;
+  color: rgba(55, 53, 47, 0.65);
+  text-transform: none;
 }
 
-/* 제목 행 (첫 번째 행) */
+/* 제목 행 */
 thead tr:first-child th {
-  background-color: #495057;
-  color: white;
-  font-size: 18px;
-  font-weight: 400;
-  padding: 15px;
-  border: 1px solid #495057;
+  background-color: white;
+  color: #37352f;
+  font-size: 20px;
+  font-weight: 600;
+  padding: 20px;
+  border-bottom: 1px solid rgba(55, 53, 47, 0.09);
 }
 
 /* ========================================
-   7. 고정 컬럼 (Sticky Columns)
+   7. 행 Hover 효과 - Notion 스타일
    ======================================== */
-/* 첫 번째 컬럼 고정 */
+tbody tr:hover td {
+  background-color: rgba(55, 53, 47, 0.03);
+}
+
+/* ========================================
+   8. 고정 컬럼
+   ======================================== */
 tbody tr > td:first-child,
 thead tr:not(:first-child) > th:first-child {
   position: sticky;
   left: 0;
   z-index: 10;
-  background-color: #f8f9fa;
-  border-right: 2px solid #dee2e6;
+  background-color: #f7f6f3;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.04);
 }
 
-/* 두 번째 컬럼 고정 */
 tbody tr > td:nth-child(2):not([colspan]),
 thead tr:not(:first-child) > th:nth-child(2):not([colspan]) {
   position: sticky;
   left: 40px;
   z-index: 10;
-  background-color: #f8f9fa;
-  border-right: 2px solid #dee2e6;
+  background-color: #f7f6f3;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.04);
 }
 
-/* colspan="2"인 경우 */
 tbody tr > td[colspan="2"],
 thead tr:not(:first-child) > th[colspan="2"] {
   position: sticky;
   left: 0;
   z-index: 10;
-  background-color: #f8f9fa;
-  border-right: 2px solid #dee2e6;
+  background-color: #f7f6f3;
   width: 140px;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.04);
 }
 
-/* 헤더의 고정 컬럼 - 제목 행 */
-thead tr:first-child > th:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 150;
-  background-color: #495057;
+/* Hover 시 고정 컬럼도 배경색 변경 */
+tbody tr:hover > td:first-child,
+tbody tr:hover > td:nth-child(2),
+tbody tr:hover > td[colspan="2"] {
+  background-color: rgba(55, 53, 47, 0.03);
 }
 
 /* ========================================
-   8. 부서명 스타일
+   9. 부서명 스타일
    ======================================== */
 .dept-header {
-  background-color: #f8f9fa;
+  background-color: #f7f6f3;
   font-weight: 600;
-  font-size: 12px;
-  color: #2c3e50;
+  font-size: 14px;
+  color: #37352f;
 }
 
 .dept-vertical {
@@ -232,124 +242,120 @@ thead tr:first-child > th:first-child {
 .dept-name {
   text-align: left;
   padding-left: 12px;
-  font-weight: 600;
-  background-color: #f8f9fa;
+  font-weight: 500;
+  background-color: #f7f6f3;
+  color: #37352f;
 }
 
 /* ========================================
-   9. 데이터 셀 스타일
+   10. 데이터 셀 스타일
    ======================================== */
 .names-cell {
   text-align: left;
-  padding: 6px 8px;
+  padding: 8px 12px;
   line-height: 1.6;
 }
 
 /* ========================================
-   10. 소계 및 합계
+   11. 소계 및 합계
    ======================================== */
 .subtotal-full,
 .subtotal-part,
 .grand-total {
-  background-color: white;
-  font-weight: 700;
-  border-left: 2px solid #dee2e6;
+  background-color: rgba(55, 53, 47, 0.04);
+  font-weight: 600;
+  color: #37352f;
 }
 
 .total-row td {
-  background-color: #f8f9fa;
-  font-weight: 700;
-  border-top: 2px solid #495057;
+  background-color: #f7f6f3;
+  font-weight: 600;
+  border-top: 2px solid rgba(55, 53, 47, 0.16);
+  color: #37352f;
 }
 
 /* ========================================
-   11. 이름 배지 및 상태 표시
+   12. 이름 배지 - Notion 태그 스타일
    ======================================== */
 .name-badge {
-  display: inline-block;
-  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
   margin: 2px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
-  border: 1px solid #dee2e6;
-  background-color: white;
-  transition: all 0.2s ease;
+  background-color: rgba(55, 53, 47, 0.06);
+  color: #37352f;
+  transition: all 0.15s ease;
+  border: none;
 }
 
 .name-badge:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  background-color: #f8f9fa;
-  border-color: #6c757d;
+  background-color: rgba(55, 53, 47, 0.12);
 }
 
-/* 연봉제 교원 (진한 글씨) */
+/* 연봉제 교원 */
 .salary-bold {
-  font-weight: 700;
+  font-weight: 600;
 }
 
-/* 휴직 상태 (파란색) */
+/* 휴직 상태 */
 .status-leave {
-  color: #0066cc;
-  font-weight: 600;
+  color: #0b6e99;
+  font-weight: 500;
 }
 
-/* 연구년 상태 (초록색) */
+/* 연구년 상태 */
 .status-research {
-  color: #28a745;
-  font-weight: 600;
+  color: #448361;
+  font-weight: 500;
 }
 
-/* 임용 종료일 기반 배경색 */
+/* 임용 종료일 기반 배경색 - Notion 컬러 팔레트 */
 .appointment-urgent {
-  background-color: #dc3545;
-  color: white;
-  border-color: #dc3545;
+  background-color: rgba(235, 87, 87, 0.15);
+  color: #d44c47;
 }
 
 .appointment-warning {
-  background-color: #fd7e14;
-  color: white;
-  border-color: #fd7e14;
+  background-color: rgba(245, 93, 66, 0.15);
+  color: #d9730d;
 }
 
 .appointment-caution {
-  background-color: #ffc107;
-  color: #212529;
-  border-color: #ffc107;
+  background-color: rgba(255, 220, 73, 0.2);
+  color: #cb912f;
 }
 
 .appointment-notice {
-  background-color: #fff3cd;
-  color: #212529;
-  border-color: #ffc107;
+  background-color: rgba(253, 236, 200, 0.3);
+  color: #837a75;
 }
 
 .appointment-safe {
-  background-color: white;
-  color: #212529;
+  background-color: rgba(55, 53, 47, 0.06);
+  color: #37352f;
 }
 
 .retirement-upcoming {
-  background-color: #d4edda;
-  color: #155724;
-  border-color: #c3e6cb;
+  background-color: rgba(68, 131, 97, 0.15);
+  color: #2b6a4b;
 }
 
 /* 개월 수 표시 */
 .appointment-info {
-  font-size: 9px;
-  background-color: rgba(0, 0, 0, 0.15);
-  color: inherit;
-  padding: 1px 4px;
+  font-size: 11px;
+  background-color: rgba(55, 53, 47, 0.15);
+  color: #37352f;
+  padding: 1px 5px;
   border-radius: 3px;
   margin-left: 4px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* ========================================
-   12. 모달 (상세 정보)
+   13. 모달 - Notion 스타일
    ======================================== */
 .modal {
   display: none;
@@ -359,8 +365,8 @@ thead tr:first-child > th:first-child {
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
+  background-color: rgba(15, 15, 15, 0.6);
+  backdrop-filter: blur(4px);
 }
 
 .modal-content {
@@ -369,7 +375,7 @@ thead tr:first-child > th:first-child {
   width: 90%;
   max-width: 500px;
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   animation: modalFadeIn 0.2s ease-out;
 }
@@ -386,35 +392,41 @@ thead tr:first-child > th:first-child {
 }
 
 .modal-header {
-  padding: 20px;
+  padding: 20px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid rgba(55, 53, 47, 0.09);
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 20px;
-  font-weight: 500;
-  color: #212529;
+  font-size: 18px;
+  font-weight: 600;
+  color: #37352f;
 }
 
 .modal-close {
-  font-size: 28px;
-  color: #6c757d;
+  font-size: 24px;
+  color: rgba(55, 53, 47, 0.45);
   cursor: pointer;
   line-height: 20px;
-  transition: color 0.2s;
+  transition: color 0.15s;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
 }
 
 .modal-close:hover {
-  color: #212529;
+  color: #37352f;
+  background-color: rgba(55, 53, 47, 0.06);
 }
 
 #modalBody {
-  padding: 20px;
+  padding: 24px;
 }
 
 .modal-list {
@@ -425,9 +437,10 @@ thead tr:first-child > th:first-child {
 
 .modal-list li {
   padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(55, 53, 47, 0.06);
   display: flex;
   align-items: baseline;
+  font-size: 14px;
 }
 
 .modal-list li:last-child {
@@ -436,23 +449,21 @@ thead tr:first-child > th:first-child {
 
 .modal-list strong {
   width: 140px;
-  color: #6c757d;
+  color: rgba(55, 53, 47, 0.65);
   font-weight: 500;
   flex-shrink: 0;
 }
 
 /* ========================================
-   13. 범례 및 주의사항 (Footnote)
+   14. 범례 및 주의사항
    ======================================== */
 .footnote {
-  margin-top: 15px;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  border-left: 4px solid #007bff;
-  color: #495057;
-  font-size: 12px;
-  flex-shrink: 0;
+  margin: 0;
+  padding: 20px 24px;
+  background-color: white;
+  border-top: 1px solid rgba(55, 53, 47, 0.09);
+  color: rgba(55, 53, 47, 0.65);
+  font-size: 13px;
 }
 
 .footnote-header {
@@ -461,28 +472,31 @@ thead tr:first-child > th:first-child {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-weight: 600;
-  color: #212529;
+  font-weight: 500;
+  color: #37352f;
+  padding: 4px 0;
 }
 
 .footnote-header:hover {
-  color: #007bff;
+  color: #37352f;
 }
 
 .footnote-content {
   display: none;
-  margin-top: 10px;
-  line-height: 1.8;
+  margin-top: 12px;
+  line-height: 1.6;
+  color: rgba(55, 53, 47, 0.65);
 }
 
 .arrow {
   font-size: 12px;
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease;
   display: inline-block;
+  color: rgba(55, 53, 47, 0.45);
 }
 
 /* ========================================
-   14. 로딩 및 에러 메시지
+   15. 로딩 및 에러 메시지
    ======================================== */
 .loading {
   display: flex;
@@ -490,27 +504,27 @@ thead tr:first-child > th:first-child {
   align-items: center;
   height: 300px;
   flex-direction: column;
-  color: #6c757d;
+  color: rgba(55, 53, 47, 0.45);
 }
 
 .loading p {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: 14px;
 }
 
 .error {
   text-align: center;
   padding: 40px;
-  color: #dc3545;
-  font-size: 16px;
-  background-color: #f8d7da;
-  border: 1px solid #f5c2c7;
+  color: #d44c47;
+  font-size: 14px;
+  background-color: rgba(235, 87, 87, 0.1);
+  border: 1px solid rgba(235, 87, 87, 0.2);
   border-radius: 4px;
   margin: 20px;
 }
 
 /* ========================================
-   15. 인쇄 스타일
+   16. 인쇄 스타일
    ======================================== */
 @media print {
   @page {
@@ -526,7 +540,6 @@ thead tr:first-child > th:first-child {
 
   .container {
     box-shadow: none;
-    height: auto;
     overflow: visible;
   }
 
@@ -537,12 +550,13 @@ thead tr:first-child > th:first-child {
 
   .table-container {
     overflow: visible !important;
-    height: auto !important;
+    padding: 0 !important;
   }
 
   table {
     width: 100% !important;
     table-layout: auto !important;
+    border: 1px solid #000;
   }
 
   th,
@@ -552,7 +566,6 @@ thead tr:first-child > th:first-child {
     padding: 2px !important;
   }
 
-  /* 고정 컬럼 해제 */
   thead,
   tbody tr > td:first-child,
   tbody tr > td:nth-child(2) {
@@ -560,7 +573,6 @@ thead tr:first-child > th:first-child {
     box-shadow: none !important;
   }
 
-  /* 색상 유지 */
   .name-badge {
     border: 1px solid #ccc !important;
   }
