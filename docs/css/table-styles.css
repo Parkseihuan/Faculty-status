@@ -185,7 +185,6 @@ th:last-child {
    ======================================== */
 /* 기본 th 스타일 */
 th {
-  background-color: white;
   font-weight: 500;
   font-size: 13px;
   color: rgba(55, 53, 47, 0.65);
@@ -193,12 +192,12 @@ th {
   white-space: nowrap;
 }
 
-/* 제목 행 */
+/* 제목 행 - Sticky Top */
 thead tr:first-child th {
   position: sticky;
   top: 0;
   z-index: 102;
-  background-color: white;
+  background-color: white !important;
   color: #37352f;
   font-size: 20px;
   font-weight: 600;
@@ -206,19 +205,13 @@ thead tr:first-child th {
   border-bottom: 1px solid rgba(55, 53, 47, 0.09);
 }
 
-/* 컬럼 헤더 행 sticky */
+/* 컬럼 헤더 행 - Sticky Top (모든 컬럼 헤더) */
 thead tr:nth-child(2) th {
   position: sticky;
-  top: 64px;
-  z-index: 101;
-  background-color: white;
+  top: 61px;
+  z-index: 100;
+  background-color: white !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-/* 구분 열만 음영 적용 */
-thead tr:nth-child(2) th:first-child,
-thead tr:nth-child(2) th:nth-child(2) {
-  background-color: #f7f6f3;
 }
 
 /* ========================================
@@ -227,48 +220,64 @@ thead tr:nth-child(2) th:nth-child(2) {
 /* Hover 효과는 섹션 8에서 구분 열과 일반 열을 분리하여 처리 */
 
 /* ========================================
-   8. 고정 컬럼 (구분)
+   8. 고정 컬럼 (구분) - Sticky Left
    ======================================== */
-/* 첫 번째 열 고정 */
-tbody tr > td:first-child,
-thead tr:not(:first-child) > th:first-child {
+/* 첫 번째 열 - Sticky Left + 음영 */
+tbody tr > td:first-child {
   position: sticky;
   left: 0;
-  z-index: 10;
-  background-color: #f7f6f3;
-  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.04);
+  z-index: 9;
+  background-color: #f7f6f3 !important;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
 }
 
-/* 두 번째 열 고정 */
-tbody tr > td:nth-child(2):not([colspan]),
-thead tr:not(:first-child) > th:nth-child(2):not([colspan]) {
+/* 두 번째 열 - Sticky Left + 음영 */
+tbody tr > td:nth-child(2):not([colspan]) {
   position: sticky;
   left: 80px;
-  z-index: 10;
-  background-color: #f7f6f3;
-  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.04);
+  z-index: 9;
+  background-color: #f7f6f3 !important;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
 }
 
-/* colspan="2"인 구분 열 */
-tbody tr > td[colspan="2"],
-thead tr:not(:first-child) > th[colspan="2"] {
+/* colspan="2"인 구분 열 - Sticky Left + 음영 */
+tbody tr > td[colspan="2"] {
   position: sticky;
   left: 0;
-  z-index: 10;
-  background-color: #f7f6f3;
-  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.04);
+  z-index: 9;
+  background-color: #f7f6f3 !important;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
 }
 
-/* Hover 시 구분 컬럼 배경색 살짝 어둡게 */
+/* 헤더의 구분 열 - Sticky Left + Top (우선순위 높음) + 음영 */
+thead tr:nth-child(2) th:first-child {
+  position: sticky;
+  left: 0;
+  top: 61px;
+  z-index: 103;
+  background-color: #f7f6f3 !important;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
+}
+
+thead tr:nth-child(2) th:nth-child(2) {
+  position: sticky;
+  left: 80px;
+  top: 61px;
+  z-index: 103;
+  background-color: #f7f6f3 !important;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
+}
+
+/* Hover 효과 - 구분 열 */
 tbody tr:hover > td:first-child,
 tbody tr:hover > td:nth-child(2):not([colspan]),
 tbody tr:hover > td[colspan="2"] {
-  background-color: rgba(55, 53, 47, 0.08);
+  background-color: rgba(55, 53, 47, 0.12) !important;
 }
 
-/* 다른 셀 hover */
+/* Hover 효과 - 일반 셀 */
 tbody tr:hover > td:not(:first-child):not(:nth-child(2)):not([colspan]) {
-  background-color: rgba(55, 53, 47, 0.03);
+  background-color: rgba(55, 53, 47, 0.03) !important;
 }
 
 /* ========================================
