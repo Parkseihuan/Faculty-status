@@ -47,7 +47,7 @@
 
 | Key | Value | 필수 여부 |
 |-----|-------|----------|
-| `MONGODB_URI` | MongoDB Atlas 연결 문자열 (예: `mongodb+srv://user:pass@cluster.mongodb.net/faculty-status`) | ⭐ **필수** |
+| `MONGODB_URI` | MongoDB Atlas 연결 문자열 (예: `mongodb+srv://<USERNAME>:<PASSWORD>@<CLUSTER>.mongodb.net/faculty-status`) | ⭐ **필수** |
 | `JWT_SECRET` | 랜덤 문자열, 32자 이상 권장 (예: `your-super-secret-key-32-chars-min`) | ⭐ **필수** |
 | `FRONTEND_URL` | `https://parkseihuan.github.io` | ⭐ **필수** |
 | `NODE_ENV` | `production` | 권장 |

@@ -89,7 +89,7 @@ Description: Render.com Backend
 #### 연결 문자열 업데이트:
 
 ```
-mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/faculty-status?appName=faculty-status
+mongodb+srv://<USERNAME>:<PASSWORD>@<CLUSTER>.mongodb.net/faculty-status?appName=faculty-status
 ```
 
 **특수문자 URL 인코딩:**
@@ -125,7 +125,7 @@ MongoDB 연결 문자열에서 데이터베이스 이름이 제대로 지정되�
 
 ❌ **잘못된 형식 (test DB 사용됨):**
 ```
-mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/?appName=faculty-status
+mongodb+srv://<USERNAME>:<PASSWORD>@<CLUSTER>.mongodb.net/?appName=faculty-status
                                                                   ↑ 데이터베이스 이름 없음
 ```
 
@@ -241,7 +241,7 @@ curl https://YOUR-BACKEND-URL.onrender.com/health
 
 | Key | Value | 설명 |
 |-----|-------|------|
-| `MONGODB_URI` | `mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/faculty-status` | MongoDB 연결 문자열 (필수) |
+| `MONGODB_URI` | `mongodb+srv://<USERNAME>:<PASSWORD>@<CLUSTER>.mongodb.net/faculty-status` | MongoDB 연결 문자열 (필수) |
 | `JWT_SECRET` | `your-super-secret-jwt-key-32-chars-min` | JWT 암호화 키 (필수) |
 | `FRONTEND_URL` | `https://parkseihuan.github.io` | GitHub Pages URL (필수) |
 | `NODE_ENV` | `production` | 프로덕션 환경 (권장) |

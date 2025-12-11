@@ -27,9 +27,9 @@
 
 - [ ] **1.5** MongoDB 연결 문자열 복사
   ```
-  mongodb+srv://faculty_admin:비밀번호@faculty-status.xxxxx.mongodb.net/faculty-status?retryWrites=true&w=majority
+  mongodb+srv://<USERNAME>:<PASSWORD>@<CLUSTER>.mongodb.net/faculty-status?retryWrites=true&w=majority
   ```
-  - ✅ 비밀번호를 실제 비밀번호로 교체
+  - ✅ `<USERNAME>`, `<PASSWORD>`, `<CLUSTER>`를 실제 값으로 교체
   - ✅ 연결 문자열을 메모장에 저장
 
 ---

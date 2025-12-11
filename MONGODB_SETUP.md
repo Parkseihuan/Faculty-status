@@ -57,14 +57,14 @@
 6. 연결 문자열 복사:
 
 ```
-mongodb+srv://faculty_admin:<password>@faculty-status.xxxxx.mongodb.net/?retryWrites=true&w=majority
+mongodb+srv://<USERNAME>:<PASSWORD>@<CLUSTER>.mongodb.net/?retryWrites=true&w=majority
 ```
 
-7. `<password>`를 실제 비밀번호로 교체
+7. `<USERNAME>`, `<PASSWORD>`, `<CLUSTER>`를 실제 값으로 교체
 8. 데이터베이스 이름 추가:
 
 ```
-mongodb+srv://faculty_admin:YOUR_PASSWORD@faculty-status.xxxxx.mongodb.net/faculty-status?retryWrites=true&w=majority
+mongodb+srv://<USERNAME>:<PASSWORD>@<CLUSTER>.mongodb.net/faculty-status?retryWrites=true&w=majority
 ```
 
 ⚠️ **주의사항**:
@@ -86,7 +86,7 @@ mongodb+srv://faculty_admin:YOUR_PASSWORD@faculty-status.xxxxx.mongodb.net/facul
 
 | Key | Value | 설명 |
 |-----|-------|------|
-| `MONGODB_URI` | `mongodb+srv://faculty_admin:YOUR_PASSWORD@...` | MongoDB 연결 문자열 (위에서 복사한 것) |
+| `MONGODB_URI` | `mongodb+srv://<USERNAME>:<PASSWORD>@<CLUSTER>.mongodb.net/faculty-status` | MongoDB 연결 문자열 (위에서 복사한 것) |
 | `JWT_SECRET` | `랜덤한_긴_문자열_최소32자이상` | JWT 토큰 암호화 키 |
 | `FRONTEND_URL` | `https://parkseihuan.github.io` | GitHub Pages URL |
 | `NODE_ENV` | `production` | 프로덕션 환경 |
