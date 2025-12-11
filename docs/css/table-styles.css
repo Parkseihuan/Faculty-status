@@ -233,7 +233,6 @@ tbody tr:hover > td[colspan="2"] {
 
 .dept-vertical {
   writing-mode: vertical-rl;
-  transform: rotate(180deg);
   text-align: center;
   padding: 10px 4px;
   white-space: nowrap;

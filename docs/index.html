@@ -9,63 +9,52 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/table-styles.css">
   <style>
-    /* Column Widths - Kept inline for specificity */
-    col:nth-child(1) { width: 40px !important; } /* Dept Group */
-    col:nth-child(2) { width: 100px !important; } /* Dept Name */
-    
-    /* Faculty Columns */
-    col:nth-child(3), col:nth-child(4), col:nth-child(5),
-    col:nth-child(6), col:nth-child(7) { width: 160px !important; }
-    
-    col:nth-child(8) { width: 50px !important; } /* Subtotal */
-    
-    /* Part-time Columns */
-    col:nth-child(9), col:nth-child(10), col:nth-child(11),
-    col:nth-child(12), col:nth-child(13), col:nth-child(14) { width: 160px !important; }
-    
-    col:nth-child(15) { width: 50px !important; } /* Subtotal */
-    
-    /* Other Columns */
-    col:nth-child(16), col:nth-child(17), col:nth-child(18),
-    col:nth-child(19), col:nth-child(20), col:nth-child(21),
-    col:nth-child(22) { width: 160px !important; }
-    
-    col:nth-child(23) { width: 60px !important; } /* Grand Total */
-
-    /* Sticky Column Widths matching col widths */
-    table tbody tr td:first-child,
-    table thead tr th:first-child {
-      width: 40px !important;
-      min-width: 40px !important;
-      max-width: 40px !important;
+    /* Notion 스타일 탭 */
+    .faculty-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 16px 24px 0 24px;
+      border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+      background-color: white;
     }
 
-    table tbody tr td:nth-child(2),
-    table thead tr th:nth-child(2) {
-      width: 100px !important;
-      min-width: 100px !important;
-      max-width: 100px !important;
+    .faculty-tab {
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(55, 53, 47, 0.65);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s ease;
+      font-family: 'Inter', 'Noto Sans KR', sans-serif;
+      margin-bottom: -1px;
+      border-radius: 4px 4px 0 0;
     }
 
-    /* Colspan for sticky header */
-    table tbody tr td[colspan="2"],
-    table thead tr th[colspan="2"] {
-      width: 140px !important; /* 40 + 100 */
-      min-width: 140px !important;
-      max-width: 140px !important;
+    .faculty-tab:hover {
+      color: #37352f;
+      background-color: rgba(55, 53, 47, 0.04);
     }
-    
-    /* Material Spinner */
+
+    .faculty-tab.active {
+      color: #37352f;
+      border-bottom-color: #37352f;
+      background-color: transparent;
+    }
+
+    /* 스피너 */
     .spinner {
       width: 40px;
       height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #1a73e8;
+      border: 4px solid rgba(55, 53, 47, 0.09);
+      border-top: 4px solid #37352f;
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin: 20px auto;
     }
-    
+
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -83,7 +72,20 @@
         <button class="btn btn-primary" onclick="window.print()">🖨️ 인쇄</button>
       </div>
     </div>
-    
+
+    <!-- 교원 구분 탭 -->
+    <div class="faculty-tabs">
+      <button class="faculty-tab active" onclick="switchTab('fullTime')" id="tab-fullTime">
+        전임교원
+      </button>
+      <button class="faculty-tab" onclick="switchTab('partTime')" id="tab-partTime">
+        비전임교원
+      </button>
+      <button class="faculty-tab" onclick="switchTab('other')" id="tab-other">
+        기타
+      </button>
+    </div>
+
     <div id="content" class="table-container">
       <div class="loading">
         <div>
@@ -92,7 +94,7 @@
         </div>
       </div>
     </div>
-    
+
     <div class="footnote">
       <div class="footnote-header" onclick="toggleFootnote()">
         <span>ℹ️ 범례 및 주의사항</span>
@@ -103,8 +105,8 @@
           <div>
             <strong>텍스트 스타일</strong><br/>
             • <b>진한 글씨</b>: 연봉제 전임교원<br/>
-            • <span style="color: #1a73e8; font-weight: bold;">파란색</span>: 휴직<br/>
-            • <span style="color: #1e8e3e; font-weight: bold;">초록색</span>: 연구년
+            • <span style="color: #0b6e99; font-weight: bold;">파란색</span>: 휴직<br/>
+            • <span style="color: #448361; font-weight: bold;">초록색</span>: 연구년
           </div>
           <div>
             <strong>배경색 의미 (임용/정년)</strong><br/>
@@ -114,14 +116,14 @@
             • <span class="name-badge appointment-caution">노란색</span>: 만료 9개월 전 (관심)
           </div>
         </div>
-        <div style="margin-top: 10px; font-size: 11px; color: #5f6368;">
+        <div style="margin-top: 10px; font-size: 11px; color: rgba(55, 53, 47, 0.65);">
           * 이름 옆 숫자: 재임용/정년까지 남은 개월 수 (12개월 이하만 표시)<br/>
           * 각 교원명을 클릭하면 상세 정보를 확인할 수 있습니다.
         </div>
       </div>
     </div>
   </div>
-  
+
   <!-- 모달 -->
   <div id="detailModal" class="modal">
     <div class="modal-content">
@@ -138,12 +140,29 @@
   <script src="js/api.js"></script>
   <script>
     let globalData = null;
-    
+    let currentTab = 'fullTime'; // 기본값: 전임교원
+
+    // 탭 전환 함수
+    function switchTab(tabName) {
+      currentTab = tabName;
+
+      // 탭 버튼 활성화 상태 변경
+      document.querySelectorAll('.faculty-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+
+      // 테이블 다시 렌더링
+      if (globalData) {
+        renderTable();
+      }
+    }
+
     // 주의사항 토글 함수
     function toggleFootnote() {
       const content = document.getElementById('footnoteContent');
       const arrow = document.querySelector('.arrow');
-      
+
       if (content.style.display === 'block') {
         content.style.display = 'none';
         arrow.style.transform = 'rotate(0deg)';
@@ -152,7 +171,7 @@
         arrow.style.transform = 'rotate(180deg)';
       }
     }
-    
+
     // 페이지 로드 시 데이터 불러오기
     window.onload = function() {
       loadData();
@@ -180,20 +199,20 @@
         handleError('서버 연결 오류: ' + error.message);
       }
     }
-    
+
     // 성공 처리
     function handleSuccess(data) {
       console.log('Received data:', data);
       globalData = data;
       renderTable();
     }
-    
+
     // 에러 처리
     function handleError(error) {
-      document.getElementById('content').innerHTML = 
+      document.getElementById('content').innerHTML =
         '<div class="error">⚠️ 오류가 발생했습니다<br>' + error + '</div>';
     }
-    
+
     // 학과명 포맷팅 함수
     function formatDeptName(deptName) {
       if (deptName === '무도스포츠산업학과(계약학과)') {
@@ -203,34 +222,32 @@
       }
       return deptName;
     }
-    
+
     // 임용 종료일까지의 개월 수 계산
     function getMonthsUntilEnd(endDate) {
       if (!endDate) return null;
-      
+
       const today = new Date();
       const end = new Date(endDate);
-      
+
       if (isNaN(end.getTime())) return null;
-      
+
       const yearDiff = end.getFullYear() - today.getFullYear();
       const monthDiff = end.getMonth() - today.getMonth();
       const dayDiff = end.getDate() - today.getDate();
-      
+
       let totalMonths = yearDiff * 12 + monthDiff;
       if (dayDiff < 0) totalMonths--;
-      
+
       return Math.max(0, totalMonths);
     }
-    
+
     // 임용 종료일 기반 CSS 클래스 결정
     function getAppointmentClass(item) {
-      // 명예교수는 기본 스타일
       if (item.position === '명예교수') {
         return 'appointment-safe';
       }
-      
-      // 정년 도래 예정자 체크 (12개월 이내)
+
       if (item.isRetirementGuaranteed && item.retirementDate) {
         const monthsToRetirement = getMonthsUntilEnd(item.retirementDate);
         if (monthsToRetirement !== null && monthsToRetirement <= 12) {
@@ -238,29 +255,27 @@
         }
         return 'appointment-safe';
       }
-      
-      // 일반 임용 종료일 체크
+
       const endDate = item.reappointmentEnd || item.firstAppointmentEnd;
       const months = getMonthsUntilEnd(endDate);
-      
+
       if (months === null || months > 12) return 'appointment-safe';
       if (months <= 3) return 'appointment-urgent';
       if (months <= 6) return 'appointment-warning';
       if (months <= 9) return 'appointment-caution';
       return 'appointment-notice';
     }
-    
+
     // 이름 목록을 버튼 형태로 표시하는 함수
     function formatNames(names) {
       if (!names || names.length === 0) return '';
-      
+
       const allNames = [];
-      
+
       names.forEach(item => {
         let nameStr = '';
         let classes = [];
-        
-        // 문자열인 경우
+
         if (typeof item === 'string') {
           const cleanedStr = item.trim();
           if (cleanedStr.includes(',')) {
@@ -270,40 +285,38 @@
             });
             return;
           }
-          
+
           const namePattern = /[가-힣]{2,4}/g;
           const foundNames = cleanedStr.match(namePattern);
-          
+
           if (foundNames && foundNames.length > 1) {
             foundNames.forEach(n => allNames.push({name: n, classes: [], item: {name: n}}));
             return;
           }
-          
+
           if (cleanedStr) {
             allNames.push({name: cleanedStr, classes: [], item: {name: cleanedStr}});
           }
-        }
-        // 객체인 경우
-        else {
+        } else {
           nameStr = item.name;
-          
+
           if (nameStr.includes(',')) {
             nameStr.split(',').forEach(n => {
               const trimmed = n.trim();
               if (trimmed) {
                 let formattedName = trimmed;
                 const nameClasses = [];
-                
+
                 if (item.status && nameStr.split(',').indexOf(n) === nameStr.split(',').length - 1) {
                   formattedName += `(${item.status})`;
                 }
-                
+
                 if (item.isSalary) nameClasses.push('salary-bold');
                 if (item.status === '휴직') nameClasses.push('status-leave');
                 else if (item.status === '연구') nameClasses.push('status-research');
-                
+
                 nameClasses.push(getAppointmentClass(item));
-                
+
                 let months = null;
                 if (item.position !== '명예교수') {
                   if (item.isRetirementGuaranteed && item.retirementDate) {
@@ -313,23 +326,23 @@
                     months = getMonthsUntilEnd(endDate);
                   }
                 }
-                
+
                 allNames.push({name: formattedName, classes: nameClasses, item: {...item, serialType: item.serialType}, months: months});
               }
             });
             return;
           }
-          
+
           if (item.isSalary) classes.push('salary-bold');
-          
+
           if (item.status) {
             nameStr += `(${item.status})`;
             if (item.status === '휴직') classes.push('status-leave');
             else if (item.status === '연구') classes.push('status-research');
           }
-          
+
           classes.push(getAppointmentClass(item));
-          
+
           let months = null;
           if (item.position !== '명예교수') {
             if (item.isRetirementGuaranteed && item.retirementDate) {
@@ -342,28 +355,28 @@
               months = getMonthsUntilEnd(endDate);
             }
           }
-          
+
           allNames.push({name: nameStr, classes: classes, item: {...item, serialType: item.serialType}, months: months});
         }
       });
-      
+
       const result = [];
       allNames.forEach((nameObj) => {
         const classStr = ['name-badge', ...nameObj.classes].join(' ');
         let appointmentInfo = '';
-        
+
         if (nameObj.months !== null && nameObj.months <= 12) {
           appointmentInfo = `<span class="appointment-info">${nameObj.months}</span>`;
         }
-        
+
         let nameText = nameObj.name;
-        
+
         result.push(`<span class="${classStr}" onclick="showFacultyDetail('${encodeURIComponent(JSON.stringify(nameObj.item))}')">${nameText}${appointmentInfo}</span>`);
       });
-      
+
       return result.join(' ');
     }
-    
+
     // 만나이 계산 함수
     function calculateAge(birthDate) {
       if (!birthDate) return null;
@@ -377,7 +390,7 @@
       }
       return age;
     }
-    
+
     // 교원 상세 정보 표시 함수
     function showFacultyDetail(encodedData) {
       try {
@@ -385,29 +398,29 @@
         const modal = document.getElementById('detailModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalBody = document.getElementById('modalBody');
-        
+
         let cleanName = data.name;
         if (data.status) {
           cleanName = cleanName.replace(`(${data.status})`, '').trim();
         }
-        
+
         modalTitle.textContent = `${cleanName} 교원 정보`;
-        
-        let genderText = data.gender ? (data.gender === '남' ? '<span style="color: #1a73e8;">남성</span>' : '<span style="color: #d93025;">여성</span>') : '<span style="color: #999;">(정보 없음)</span>';
-        
-        let birthDateText = data.birthDate || '<span style="color: #999;">(정보 없음)</span>';
+
+        let genderText = data.gender ? (data.gender === '남' ? '<span style="color: #0b6e99;">남성</span>' : '<span style="color: #d44c47;">여성</span>') : '<span style="color: rgba(55, 53, 47, 0.45);">(정보 없음)</span>';
+
+        let birthDateText = data.birthDate || '<span style="color: rgba(55, 53, 47, 0.45);">(정보 없음)</span>';
         const age = calculateAge(data.birthDate);
         if (age !== null) birthDateText += ` (만 ${age}세)`;
-        
+
         let listHtml = `<ul class="modal-list">`;
         listHtml += `<li><strong>성명</strong> ${cleanName}</li>`;
         listHtml += `<li><strong>성별</strong> ${genderText}</li>`;
         listHtml += `<li><strong>생년월일</strong> ${birthDateText}</li>`;
-        
+
         if (data.firstAppointmentStart) {
             listHtml += `<li><strong>최초 임용일</strong> ${data.firstAppointmentStart}</li>`;
         }
-        
+
         let endLabel = '임용 종료일';
         let endValue = '';
         if (data.position === '명예교수') {
@@ -428,110 +441,88 @@
             }
         }
         listHtml += `<li><strong>${endLabel}</strong> ${endValue}</li>`;
-        
+
         if (data.college || data.dept) {
             listHtml += `<li><strong>소속</strong> ${data.college || ''} ${data.dept || ''}</li>`;
         }
-        
+
         if (data.position) {
             listHtml += `<li><strong>직급</strong> ${data.position}</li>`;
         }
-        
+
         if (data.status) {
             listHtml += `<li><strong>상태</strong> ${data.status}</li>`;
         }
-        
+
         if (data.serialType === '전임교원') {
             listHtml += `<li><strong>급여체계</strong> ${data.isSalary ? '연봉제' : '호봉제'}</li>`;
         }
-        
+
         listHtml += `</ul>`;
-        
+
         modalBody.innerHTML = listHtml;
         modal.style.display = 'block';
       } catch (error) {
         console.error('Error showing faculty detail:', error);
       }
     }
-    
+
     function closeModal() {
       document.getElementById('detailModal').style.display = 'none';
     }
-    
+
     window.onclick = function(event) {
       const modal = document.getElementById('detailModal');
       if (event.target == modal) {
         modal.style.display = 'none';
       }
     }
-    
-    // 테이블 렌더링
+
+    // 테이블 렌더링 (탭별로 다른 컬럼 표시)
     function renderTable() {
       if (!globalData) return;
-      
+
       const { facultyData, deptStructure, fullTimePositions, partTimePositions, otherPositions } = globalData;
       const currentDate = new Date().toLocaleDateString('ko-KR');
-      
+
+      // 현재 탭에 따라 표시할 컬럼 결정
+      let positions = [];
+      let tabTitle = '';
+
+      if (currentTab === 'fullTime') {
+        positions = fullTimePositions;
+        tabTitle = '전임교원';
+      } else if (currentTab === 'partTime') {
+        positions = partTimePositions;
+        tabTitle = '비전임교원';
+      } else {
+        positions = otherPositions;
+        tabTitle = '기타';
+      }
+
       let html = `
-        <table>
-            <colgroup>
-              <col style="width: 40px !important;">
-              <col style="width: 100px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 50px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 50px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 160px !important;">
-              <col style="width: 60px !important;">
-            </colgroup>
+        <table style="width: auto !important;">
             <thead>
               <tr>
-                <th colspan="${3 + fullTimePositions.length + partTimePositions.length + otherPositions.length + 3}">
-                  교원현황 (${currentDate})
+                <th colspan="${3 + positions.length}">
+                  ${tabTitle} 현황 (${currentDate})
                 </th>
               </tr>
               <tr>
-                <th rowspan="2" colspan="2">구분</th>
-                <th colspan="${fullTimePositions.length + 1}">전임교원</th>
-                <th colspan="${partTimePositions.length + 1}">비전임교원</th>
-                <th colspan="${otherPositions.length}">기타</th>
-                <th rowspan="2">합계</th>
-              </tr>
-              <tr>
+                <th colspan="2">구분</th>
       `;
-      
-      fullTimePositions.forEach(pos => {
+
+      positions.forEach(pos => {
         if (pos.includes('비정년트랙')) {
           const parts = pos.split('(');
-          html += `<th>${parts[0]}<br/><span style="font-size: 10px; color: #5f6368;">(${parts[1]}</span></th>`;
+          html += `<th>${parts[0]}<br/><span style="font-size: 11px; color: rgba(55, 53, 47, 0.65);">(${parts[1]}</span></th>`;
         } else {
           html += `<th>${pos}</th>`;
         }
       });
-      html += '<th class="subtotal-full">소계</th>';
-      
-      partTimePositions.forEach(pos => html += `<th>${pos}</th>`);
-      html += '<th class="subtotal-part">소계</th>';
-      
-      otherPositions.forEach(pos => html += `<th>${pos}</th>`);
-      
+      html += '<th class="subtotal-full">합계</th>';
       html += '</tr></thead><tbody>';
-      
+
       const calculateTotal = (data, positions) => {
         let total = 0;
         positions.forEach(pos => {
@@ -539,7 +530,7 @@
         });
         return total;
       };
-      
+
       const calculateColumnTotal = (pos) => {
         let total = 0;
         Object.values(facultyData).forEach(deptGroup => {
@@ -564,10 +555,7 @@
 
            activeDepts.forEach((subDept, subIdx) => {
              const deptData = facultyData[dept.name] && facultyData[dept.name][subDept] ? facultyData[dept.name][subDept] : {};
-             const fullTimeTotal = calculateTotal(deptData, fullTimePositions);
-             const partTimeTotal = calculateTotal(deptData, partTimePositions);
-             const otherTotal = calculateTotal(deptData, otherPositions);
-             const grandTotal = fullTimeTotal + partTimeTotal + otherTotal;
+             const total = calculateTotal(deptData, positions);
 
              html += '<tr>';
              if (subIdx === 0) {
@@ -576,80 +564,42 @@
                 html += `<td rowspan="${activeDepts.length}" class="dept-header ${isVertical ? 'dept-vertical' : ''}">${dept.name}</td>`;
              }
              html += `<td class="dept-name">${formatDeptName(subDept)}</td>`;
-             
-             fullTimePositions.forEach(pos => html += `<td class="names-cell">${formatNames(deptData[pos])}</td>`);
-             html += `<td class="subtotal-full">${fullTimeTotal}</td>`;
-             
-             partTimePositions.forEach(pos => html += `<td class="names-cell">${formatNames(deptData[pos])}</td>`);
-             html += `<td class="subtotal-part">${partTimeTotal}</td>`;
-             
-             otherPositions.forEach(pos => html += `<td class="names-cell">${formatNames(deptData[pos])}</td>`);
-             html += `<td class="grand-total">${grandTotal}</td>`;
+
+             positions.forEach(pos => html += `<td class="names-cell">${formatNames(deptData[pos])}</td>`);
+             html += `<td class="subtotal-full">${total}</td>`;
              html += '</tr>';
            });
         } else {
            const deptData = facultyData[dept.name] || {};
-           const fullTimeTotal = calculateTotal(deptData, fullTimePositions);
-           const partTimeTotal = calculateTotal(deptData, partTimePositions);
-           const otherTotal = calculateTotal(deptData, otherPositions);
-           const grandTotal = fullTimeTotal + partTimeTotal + otherTotal;
-           
+           const total = calculateTotal(deptData, positions);
+
            html += '<tr>';
            html += `<td colspan="2" class="dept-header">${dept.name}</td>`;
-           fullTimePositions.forEach(pos => html += `<td class="names-cell">${formatNames(deptData[pos])}</td>`);
-           html += `<td class="subtotal-full">${fullTimeTotal}</td>`;
-           partTimePositions.forEach(pos => html += `<td class="names-cell">${formatNames(deptData[pos])}</td>`);
-           html += `<td class="subtotal-part">${partTimeTotal}</td>`;
-           otherPositions.forEach(pos => html += `<td class="names-cell">${formatNames(deptData[pos])}</td>`);
-           html += `<td class="grand-total">${grandTotal}</td>`;
+           positions.forEach(pos => html += `<td class="names-cell">${formatNames(deptData[pos])}</td>`);
+           html += `<td class="subtotal-full">${total}</td>`;
            html += '</tr>';
         }
       });
-      
+
       const etcData = facultyData['기타'] || {};
-      const etcFullTimeTotal = calculateTotal(etcData, fullTimePositions);
-      const etcPartTimeTotal = calculateTotal(etcData, partTimePositions);
-      const etcOtherTotal = calculateTotal(etcData, otherPositions);
-      const etcGrandTotal = etcFullTimeTotal + etcPartTimeTotal + etcOtherTotal;
-      
+      const etcTotal = calculateTotal(etcData, positions);
+
       html += '<tr><td colspan="2" class="dept-header">기타</td>';
-      fullTimePositions.forEach(pos => html += `<td class="names-cell">${formatNames(etcData[pos])}</td>`);
-      html += `<td class="subtotal-full">${etcFullTimeTotal}</td>`;
-      partTimePositions.forEach(pos => html += `<td class="names-cell">${formatNames(etcData[pos])}</td>`);
-      html += `<td class="subtotal-part">${etcPartTimeTotal}</td>`;
-      otherPositions.forEach(pos => html += `<td class="names-cell">${formatNames(etcData[pos])}</td>`);
-      html += `<td class="grand-total">${etcGrandTotal}</td></tr>`;
-      
+      positions.forEach(pos => html += `<td class="names-cell">${formatNames(etcData[pos])}</td>`);
+      html += `<td class="subtotal-full">${etcTotal}</td></tr>`;
+
       html += '<tr class="total-row"><td colspan="2">합계</td>';
-      
-      let totalFullTime = 0;
-      fullTimePositions.forEach(pos => {
+
+      let grandTotal = 0;
+      positions.forEach(pos => {
         const total = calculateColumnTotal(pos);
-        totalFullTime += total;
+        grandTotal += total;
         html += `<td>${total}</td>`;
       });
-      html += `<td>${totalFullTime}</td>`;
-      
-      let totalPartTime = 0;
-      partTimePositions.forEach(pos => {
-        const total = calculateColumnTotal(pos);
-        totalPartTime += total;
-        html += `<td>${total}</td>`;
-      });
-      html += `<td>${totalPartTime}</td>`;
-      
-      let totalOther = 0;
-      otherPositions.forEach(pos => {
-        const total = calculateColumnTotal(pos);
-        totalOther += total;
-        html += `<td>${total}</td>`;
-      });
-      
-      const grandTotalAll = totalFullTime + totalPartTime + totalOther;
-      html += `<td>${grandTotalAll}</td></tr>`;
-      
+      html += `<td>${grandTotal}</td></tr>`;
+
       html += '</tbody></table>';
-      
+
       document.getElementById('content').innerHTML = html;
     }
   </script>
