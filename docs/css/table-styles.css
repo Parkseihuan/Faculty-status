@@ -94,6 +94,7 @@ body {
   position: relative;
   background-color: white;
   padding: 24px;
+  max-height: calc(100vh - 250px);
 }
 
 /* Notion 스타일 스크롤바 */
@@ -120,7 +121,7 @@ body {
    5. 테이블 기본 스타일
    ======================================== */
 table {
-  width: 3095px !important;
+  width: 100% !important;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 14px;
@@ -149,13 +150,27 @@ th:last-child {
 }
 
 /* ========================================
-   6. 헤더 스타일 - Notion 스타일
+   6. 헤더 스타일 - Notion 스타일 + Sticky
    ======================================== */
-thead {
+/* 제목 행 sticky */
+thead tr:first-child {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 102;
   background-color: white;
+}
+
+/* 컬럼 헤더 행 sticky - 제목 행 아래에 배치 */
+thead tr:nth-child(2) {
+  position: sticky;
+  top: 64px;
+  z-index: 101;
+  background-color: white;
+}
+
+/* Sticky 헤더에 그림자 추가 */
+thead tr:nth-child(2) th {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 th {
@@ -164,6 +179,7 @@ th {
   font-size: 13px;
   color: rgba(55, 53, 47, 0.65);
   text-transform: none;
+  white-space: nowrap;
 }
 
 /* 제목 행 */
@@ -174,6 +190,7 @@ thead tr:first-child th {
   font-weight: 600;
   padding: 20px;
   border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+  top: 0;
 }
 
 /* ========================================
@@ -244,6 +261,8 @@ tbody tr:hover > td[colspan="2"] {
   font-weight: 500;
   background-color: #f7f6f3;
   color: #37352f;
+  white-space: nowrap;
+  overflow: visible;
 }
 
 /* ========================================

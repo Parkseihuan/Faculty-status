@@ -215,11 +215,7 @@
 
     // 학과명 포맷팅 함수
     function formatDeptName(deptName) {
-      if (deptName === '무도스포츠산업학과(계약학과)') {
-        return '무도스포츠산업학과<br/>(계약학과)';
-      } else if (deptName === '미용경영학과(야)') {
-        return '미용경영학과<br/>(야)';
-      }
+      // 학과명은 줄바꿈 없이 한 줄로 표시
       return deptName;
     }
 
@@ -501,7 +497,7 @@
       }
 
       let html = `
-        <table style="width: auto !important;">
+        <table>
             <thead>
               <tr>
                 <th colspan="${3 + positions.length}">
