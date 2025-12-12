@@ -188,7 +188,7 @@ th {
 thead tr:first-child th {
   position: sticky;
   top: 0;
-  z-index: 101;
+  z-index: 1001;
   background-color: white !important;
   color: #37352f;
   font-size: 20px;
@@ -201,7 +201,7 @@ thead tr:first-child th {
 thead tr:nth-child(2) th {
   position: sticky;
   top: 69px;
-  z-index: 100;
+  z-index: 1000;
   background-color: white !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
