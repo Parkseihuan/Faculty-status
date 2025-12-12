@@ -28,15 +28,23 @@ const uploadResult = document.getElementById('uploadResult');
 const loadOrgBtn = document.getElementById('loadOrgBtn');
 const saveOrgBtn = document.getElementById('saveOrgBtn');
 const resetOrgBtn = document.getElementById('resetOrgBtn');
-const orgEditor = document.getElementById('orgEditor');
 const orgResult = document.getElementById('orgResult');
+
+// 조직 탭 버튼들
+const orgTabBtns = document.querySelectorAll('.org-tab-btn');
+const orgEditorSections = document.querySelectorAll('.org-editor-section');
 
 // 업로드 기록 탭
 const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
 const historyList = document.getElementById('historyList');
 
 let selectedFile = null;
-let currentOrgData = null;
+let currentOrgData = {
+  fulltime: null,
+  parttime: null,
+  other: null
+};
+let activeOrgTab = 'fulltime';
 
 /**
  * 초기화
@@ -269,13 +277,45 @@ uploadBtn.addEventListener('click', async () => {
 // ===== 조직 순서 설정 =====
 
 /**
+ * 조직 탭 전환
+ */
+orgTabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const orgTab = btn.dataset.orgTab;
+
+    // 활성 탭 변경
+    orgTabBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    // 섹션 변경
+    orgEditorSections.forEach(section => section.classList.remove('active'));
+    document.getElementById(`${orgTab}-org`).classList.add('active');
+
+    activeOrgTab = orgTab;
+  });
+});
+
+/**
  * 조직 데이터 불러오기
  */
 loadOrgBtn.addEventListener('click', async () => {
   try {
     const result = await api.getOrganization();
-    currentOrgData = result.data;
-    renderOrgEditor(currentOrgData);
+    const orgData = result.data;
+
+    // 3개 탭 모두에 동일한 데이터로 초기화
+    currentOrgData.fulltime = JSON.parse(JSON.stringify(orgData));
+    currentOrgData.parttime = JSON.parse(JSON.stringify(orgData));
+    currentOrgData.other = JSON.parse(JSON.stringify(orgData));
+
+    // 모든 섹션 렌더링
+    renderOrgEditor('fulltime', currentOrgData.fulltime);
+    renderOrgEditor('parttime', currentOrgData.parttime);
+    renderOrgEditor('other', currentOrgData.other);
+
+    // 조직 탭 표시
+    document.getElementById('orgTabs').classList.remove('hidden');
+
     saveOrgBtn.disabled = false;
     orgResult.classList.add('hidden');
   } catch (error) {
@@ -286,8 +326,20 @@ loadOrgBtn.addEventListener('click', async () => {
 /**
  * 조직 에디터 렌더링
  */
-function renderOrgEditor(orgData) {
-  orgEditor.innerHTML = '';
+function renderOrgEditor(section, orgData) {
+  const container = document.getElementById(`${section}-org`);
+  if (!container) return;
+
+  // 기존 org-editor가 있으면 제거
+  const existingEditor = container.querySelector('.org-editor');
+  if (existingEditor) {
+    existingEditor.remove();
+  }
+
+  // 새 에디터 생성
+  const orgEditor = document.createElement('div');
+  orgEditor.className = 'org-editor';
+  orgEditor.dataset.section = section;
 
   orgData.forEach((dept, index) => {
     const deptEl = document.createElement('div');
@@ -296,11 +348,11 @@ function renderOrgEditor(orgData) {
 
     deptEl.innerHTML = `
       <div class="org-item-header">
-        <input type="text" value="${dept.name}" class="dept-name-input" data-index="${index}">
+        <input type="text" value="${dept.name}" class="dept-name-input" data-index="${index}" data-section="${section}">
         <div class="org-item-controls">
-          <button class="btn btn-sm btn-secondary move-up" data-index="${index}">▲</button>
-          <button class="btn btn-sm btn-secondary move-down" data-index="${index}">▼</button>
-          <button class="btn btn-sm btn-danger delete-dept" data-index="${index}">삭제</button>
+          <button class="btn btn-sm btn-secondary move-up" data-index="${index}" data-section="${section}">▲</button>
+          <button class="btn btn-sm btn-secondary move-down" data-index="${index}" data-section="${section}">▼</button>
+          <button class="btn btn-sm btn-danger delete-dept" data-index="${index}" data-section="${section}">삭제</button>
         </div>
       </div>
       <div class="sub-depts">
@@ -308,11 +360,11 @@ function renderOrgEditor(orgData) {
         <div class="sub-dept-list" data-dept-index="${index}">
           ${dept.subDepts.map((subDept, subIndex) => `
             <div class="sub-dept-item">
-              <input type="text" value="${subDept}" data-dept-index="${index}" data-sub-index="${subIndex}">
-              <button class="btn btn-sm btn-danger delete-sub-dept" data-dept-index="${index}" data-sub-index="${subIndex}">삭제</button>
+              <input type="text" value="${subDept}" data-dept-index="${index}" data-sub-index="${subIndex}" data-section="${section}">
+              <button class="btn btn-sm btn-danger delete-sub-dept" data-dept-index="${index}" data-sub-index="${subIndex}" data-section="${section}">삭제</button>
             </div>
           `).join('')}
-          <button class="btn btn-sm btn-success add-sub-dept" data-dept-index="${index}">+ 학과 추가</button>
+          <button class="btn btn-sm btn-success add-sub-dept" data-dept-index="${index}" data-section="${section}">+ 학과 추가</button>
         </div>
       </div>
     `;
@@ -324,85 +376,102 @@ function renderOrgEditor(orgData) {
   const addDeptBtn = document.createElement('button');
   addDeptBtn.className = 'btn btn-success';
   addDeptBtn.textContent = '+ 대학 추가';
-  addDeptBtn.onclick = addDepartment;
+  addDeptBtn.dataset.section = section;
+  addDeptBtn.onclick = () => addDepartment(section);
   orgEditor.appendChild(addDeptBtn);
 
+  container.appendChild(orgEditor);
+
   // 이벤트 리스너 등록
-  attachOrgEditorEvents();
+  attachOrgEditorEvents(section);
 }
 
 /**
  * 조직 에디터 이벤트 리스너
  */
-function attachOrgEditorEvents() {
+function attachOrgEditorEvents(section) {
+  const container = document.getElementById(`${section}-org`);
+  if (!container) return;
+
+  const sectionData = currentOrgData[section];
+
   // 대학명 변경
-  document.querySelectorAll('.dept-name-input').forEach(input => {
+  container.querySelectorAll('.dept-name-input').forEach(input => {
     input.addEventListener('change', (e) => {
       const index = parseInt(e.target.dataset.index);
-      currentOrgData[index].name = e.target.value;
+      const sec = e.target.dataset.section;
+      currentOrgData[sec][index].name = e.target.value;
     });
   });
 
   // 대학 위로 이동
-  document.querySelectorAll('.move-up').forEach(btn => {
+  container.querySelectorAll('.move-up').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const index = parseInt(e.target.dataset.index);
+      const sec = e.target.dataset.section;
       if (index > 0) {
-        [currentOrgData[index], currentOrgData[index - 1]] = [currentOrgData[index - 1], currentOrgData[index]];
-        renderOrgEditor(currentOrgData);
+        [currentOrgData[sec][index], currentOrgData[sec][index - 1]] =
+          [currentOrgData[sec][index - 1], currentOrgData[sec][index]];
+        renderOrgEditor(sec, currentOrgData[sec]);
       }
     });
   });
 
   // 대학 아래로 이동
-  document.querySelectorAll('.move-down').forEach(btn => {
+  container.querySelectorAll('.move-down').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const index = parseInt(e.target.dataset.index);
-      if (index < currentOrgData.length - 1) {
-        [currentOrgData[index], currentOrgData[index + 1]] = [currentOrgData[index + 1], currentOrgData[index]];
-        renderOrgEditor(currentOrgData);
+      const sec = e.target.dataset.section;
+      if (index < currentOrgData[sec].length - 1) {
+        [currentOrgData[sec][index], currentOrgData[sec][index + 1]] =
+          [currentOrgData[sec][index + 1], currentOrgData[sec][index]];
+        renderOrgEditor(sec, currentOrgData[sec]);
       }
     });
   });
 
   // 대학 삭제
-  document.querySelectorAll('.delete-dept').forEach(btn => {
+  container.querySelectorAll('.delete-dept').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const index = parseInt(e.target.dataset.index);
-      if (confirm(`'${currentOrgData[index].name}'을(를) 삭제하시겠습니까?`)) {
-        currentOrgData.splice(index, 1);
-        renderOrgEditor(currentOrgData);
+      const sec = e.target.dataset.section;
+      if (confirm(`'${currentOrgData[sec][index].name}'을(를) 삭제하시겠습니까?`)) {
+        currentOrgData[sec].splice(index, 1);
+        renderOrgEditor(sec, currentOrgData[sec]);
       }
     });
   });
 
   // 학과명 변경
-  document.querySelectorAll('.sub-dept-item input').forEach(input => {
+  container.querySelectorAll('.sub-dept-item input').forEach(input => {
     input.addEventListener('change', (e) => {
       const deptIndex = parseInt(e.target.dataset.deptIndex);
       const subIndex = parseInt(e.target.dataset.subIndex);
-      currentOrgData[deptIndex].subDepts[subIndex] = e.target.value;
+      const sec = e.target.dataset.section;
+      currentOrgData[sec][deptIndex].subDepts[subIndex] = e.target.value;
     });
   });
 
   // 학과 삭제
-  document.querySelectorAll('.delete-sub-dept').forEach(btn => {
+  container.querySelectorAll('.delete-sub-dept').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const deptIndex = parseInt(e.target.dataset.deptIndex);
       const subIndex = parseInt(e.target.dataset.subIndex);
-      currentOrgData[deptIndex].subDepts.splice(subIndex, 1);
-      renderOrgEditor(currentOrgData);
+      const sec = e.target.dataset.section;
+      currentOrgData[sec][deptIndex].subDepts.splice(subIndex, 1);
+      renderOrgEditor(sec, currentOrgData[sec]);
     });
   });
 
   // 학과 추가
-  document.querySelectorAll('.add-sub-dept').forEach(btn => {
+  container.querySelectorAll('.add-sub-dept').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const deptIndex = parseInt(e.target.dataset.deptIndex);
+      const sec = e.target.dataset.section;
       const newSubDeptName = prompt('학과명을 입력하세요:');
       if (newSubDeptName && newSubDeptName.trim()) {
-        currentOrgData[deptIndex].subDepts.push(newSubDeptName.trim());
-        renderOrgEditor(currentOrgData);
+        currentOrgData[sec][deptIndex].subDepts.push(newSubDeptName.trim());
+        renderOrgEditor(sec, currentOrgData[sec]);
       }
     });
   });
@@ -411,14 +480,14 @@ function attachOrgEditorEvents() {
 /**
  * 대학 추가
  */
-function addDepartment() {
+function addDepartment(section) {
   const newDeptName = prompt('대학명을 입력하세요:');
   if (newDeptName && newDeptName.trim()) {
-    currentOrgData.push({
+    currentOrgData[section].push({
       name: newDeptName.trim(),
       subDepts: []
     });
-    renderOrgEditor(currentOrgData);
+    renderOrgEditor(section, currentOrgData[section]);
   }
 }
 
@@ -426,30 +495,64 @@ function addDepartment() {
  * 조직 데이터 저장
  */
 saveOrgBtn.addEventListener('click', async () => {
-  if (!currentOrgData) return;
+  if (!currentOrgData.fulltime && !currentOrgData.parttime && !currentOrgData.other) return;
 
   try {
-    const result = await api.updateOrganization(currentOrgData);
-    orgResult.classList.remove('hidden');
-    orgResult.className = 'result success';
-    orgResult.innerHTML = `
-      <h3>✅ 저장 성공!</h3>
-      <p>${result.message}</p>
-    `;
+    // 현재 활성 탭의 데이터만 저장
+    // 향후 백엔드에서 3개 섹션을 모두 지원할 때까지는 활성 탭만 저장
+    const dataToSave = currentOrgData[activeOrgTab];
+
+    if (confirm(`현재 선택된 '${getOrgTabName(activeOrgTab)}' 탭의 조직 구조를 저장하시겠습니까?\n\n참고: 현재는 하나의 조직 구조만 저장됩니다. 나중에 각 교원 유형별 구조를 모두 저장할 수 있도록 업데이트될 예정입니다.`)) {
+      const result = await api.updateOrganization(dataToSave);
+      orgResult.classList.remove('hidden');
+      orgResult.className = 'result success';
+      orgResult.innerHTML = `
+        <h3>✅ 저장 성공!</h3>
+        <p>${result.message}</p>
+        <p><small>저장된 섹션: ${getOrgTabName(activeOrgTab)}</small></p>
+      `;
+    }
   } catch (error) {
     showOrgError('저장에 실패했습니다: ' + error.message);
   }
 });
 
 /**
+ * 조직 탭 이름 가져오기
+ */
+function getOrgTabName(tabKey) {
+  const names = {
+    fulltime: '전임교원',
+    parttime: '비전임교원',
+    other: '기타'
+  };
+  return names[tabKey] || tabKey;
+}
+
+/**
  * 기본값으로 초기화
  */
 resetOrgBtn.addEventListener('click', () => {
-  if (confirm('조직 구조를 기본값으로 초기화하시겠습니까?')) {
-    // 기본 조직 구조 (백엔드와 동일)
-    currentOrgData = getDefaultOrgStructure();
-    renderOrgEditor(currentOrgData);
+  if (confirm('모든 조직 구조를 기본값으로 초기화하시겠습니까?')) {
+    // 기본 조직 구조로 모든 섹션 초기화
+    const defaultOrg = getDefaultOrgStructure();
+    currentOrgData.fulltime = JSON.parse(JSON.stringify(defaultOrg));
+    currentOrgData.parttime = JSON.parse(JSON.stringify(defaultOrg));
+    currentOrgData.other = JSON.parse(JSON.stringify(defaultOrg));
+
+    // 모든 섹션 다시 렌더링
+    renderOrgEditor('fulltime', currentOrgData.fulltime);
+    renderOrgEditor('parttime', currentOrgData.parttime);
+    renderOrgEditor('other', currentOrgData.other);
+
     saveOrgBtn.disabled = false;
+
+    orgResult.classList.remove('hidden');
+    orgResult.className = 'result success';
+    orgResult.innerHTML = `
+      <h3>✅ 초기화 완료</h3>
+      <p>모든 섹션이 기본값으로 초기화되었습니다.</p>
+    `;
   }
 });
 

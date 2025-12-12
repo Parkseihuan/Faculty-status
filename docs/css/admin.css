@@ -407,6 +407,50 @@ header h1 {
   flex-wrap: wrap;
 }
 
+/* 조직 탭 */
+.org-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 24px 0 16px 0;
+  border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+  padding-bottom: 0;
+}
+
+.org-tab-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(55, 53, 47, 0.65);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
+  margin-bottom: -1px;
+  border-radius: 4px 4px 0 0;
+}
+
+.org-tab-btn:hover {
+  color: #37352f;
+  background-color: rgba(55, 53, 47, 0.04);
+}
+
+.org-tab-btn.active {
+  color: #37352f;
+  border-bottom-color: #37352f;
+  background-color: transparent;
+}
+
+/* 조직 편집 섹션 */
+.org-editor-section {
+  display: none;
+}
+
+.org-editor-section.active {
+  display: block;
+}
+
 .org-editor {
   max-height: 500px;
   overflow-y: auto;

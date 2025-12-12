@@ -83,7 +83,7 @@
         <div id="organization-tab" class="tab-pane">
           <div class="card">
             <h2>조직 순서 설정</h2>
-            <p class="description">대학 및 학과의 표시 순서를 설정할 수 있습니다.</p>
+            <p class="description">교원 유형별로 대학 및 학과의 표시 순서를 설정할 수 있습니다.</p>
 
             <div class="org-controls">
               <button id="loadOrgBtn" class="btn btn-primary">현재 설정 불러오기</button>
@@ -91,7 +91,25 @@
               <button id="resetOrgBtn" class="btn btn-secondary">기본값으로 초기화</button>
             </div>
 
-            <div id="orgEditor" class="org-editor">
+            <!-- 교원 유형 탭 -->
+            <div id="orgTabs" class="org-tabs hidden">
+              <button class="org-tab-btn active" data-org-tab="fulltime">전임교원</button>
+              <button class="org-tab-btn" data-org-tab="parttime">비전임교원</button>
+              <button class="org-tab-btn" data-org-tab="other">기타</button>
+            </div>
+
+            <!-- 전임교원 조직 -->
+            <div id="fulltime-org" class="org-editor-section active">
+              <p class="info-text">조직 설정을 불러오려면 위의 버튼을 클릭하세요.</p>
+            </div>
+
+            <!-- 비전임교원 조직 -->
+            <div id="parttime-org" class="org-editor-section">
+              <p class="info-text">조직 설정을 불러오려면 위의 버튼을 클릭하세요.</p>
+            </div>
+
+            <!-- 기타 조직 -->
+            <div id="other-org" class="org-editor-section">
               <p class="info-text">조직 설정을 불러오려면 위의 버튼을 클릭하세요.</p>
             </div>
 
