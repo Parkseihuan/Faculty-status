@@ -184,8 +184,11 @@ th {
   background-color: white !important;
 }
 
-/* 제목 행 - Sticky 없음 */
+/* 제목 행 - Sticky (탭 아래에 붙음) */
 thead tr:first-child th {
+  position: sticky;
+  top: 0;
+  z-index: 101;
   background-color: white !important;
   color: #37352f;
   font-size: 20px;
@@ -194,10 +197,10 @@ thead tr:first-child th {
   border-bottom: 1px solid rgba(55, 53, 47, 0.09);
 }
 
-/* 컬럼 헤더 행만 Sticky */
+/* 컬럼 헤더 행 - Sticky (제목 행 아래에 붙음) */
 thead tr:nth-child(2) th {
   position: sticky;
-  top: 0;
+  top: 69px;
   z-index: 100;
   background-color: white !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -219,7 +222,6 @@ thead tr:nth-child(2) th {
 }
 
 .dept-vertical {
-  writing-mode: vertical-rl;
   text-align: center;
   padding: 10px 4px;
   white-space: nowrap;
