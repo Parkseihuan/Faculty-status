@@ -172,8 +172,16 @@ th:last-child {
 }
 
 /* ========================================
-   6. 헤더 스타일 - Sticky 컬럼 헤더만
+   6. 헤더 스타일 - Sticky 헤더
    ======================================== */
+/* thead 전체를 sticky로 */
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background-color: white;
+}
+
 /* 기본 th 스타일 */
 th {
   font-weight: 500;
@@ -184,11 +192,8 @@ th {
   background-color: white !important;
 }
 
-/* 제목 행 - Sticky (탭 아래에 붙음) */
+/* 제목 행 */
 thead tr:first-child th {
-  position: sticky;
-  top: 0;
-  z-index: 1001;
   background-color: white !important;
   color: #37352f;
   font-size: 20px;
@@ -197,13 +202,16 @@ thead tr:first-child th {
   border-bottom: 1px solid rgba(55, 53, 47, 0.09);
 }
 
-/* 컬럼 헤더 행 - Sticky (제목 행 아래에 붙음) */
+/* 컬럼 헤더 행 */
 thead tr:nth-child(2) th {
-  position: sticky;
-  top: 69px;
-  z-index: 1000;
   background-color: white !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* tbody가 thead 아래에 표시되도록 */
+tbody {
+  position: relative;
+  z-index: 1;
 }
 
 /* ========================================
