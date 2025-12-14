@@ -44,7 +44,15 @@ router.get('/data', async (req, res) => {
     res.json({
       success: true,
       data: responseData,
-      lastUpdated: latestData.updatedAt
+      lastUpdated: latestData.updatedAt,
+      // 임시 디버그 정보
+      debug: {
+        orgDocExists: !!orgDoc,
+        orgDocHasDeptStructure: !!(orgDoc && orgDoc.deptStructure),
+        orgFirstItem: orgDoc && orgDoc.deptStructure ? orgDoc.deptStructure[0]?.name : 'N/A',
+        facultyDataFirstItem: latestData.deptStructure[0]?.name,
+        usedFirstItem: deptStructure[0]?.name
+      }
     });
 
   } catch (error) {
