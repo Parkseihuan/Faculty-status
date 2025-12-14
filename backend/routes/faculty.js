@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const FacultyData = require('../models/FacultyData');
+const Organization = require('../models/Organization');
 
 /**
  * GET /api/faculty/data
@@ -20,10 +21,14 @@ router.get('/data', async (req, res) => {
       });
     }
 
+    // Organization 모델에서 최신 조직 순서 조회
+    const orgDoc = await Organization.getLatest();
+    const deptStructure = orgDoc ? orgDoc.deptStructure : latestData.deptStructure;
+
     // 응답 데이터 구성
     const responseData = {
       facultyData: latestData.facultyData,
-      deptStructure: latestData.deptStructure,
+      deptStructure: deptStructure, // Organization 모델의 최신 조직 순서 사용
       fullTimePositions: latestData.fullTimePositions,
       partTimePositions: latestData.partTimePositions,
       otherPositions: latestData.otherPositions
