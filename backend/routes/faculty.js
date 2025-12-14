@@ -23,7 +23,14 @@ router.get('/data', async (req, res) => {
 
     // Organization 모델에서 최신 조직 순서 조회
     const orgDoc = await Organization.getLatest();
-    const deptStructure = orgDoc ? orgDoc.deptStructure : latestData.deptStructure;
+    console.log('🔍 DEBUG - orgDoc:', orgDoc ? 'EXISTS' : 'NULL');
+    if (orgDoc && orgDoc.deptStructure) {
+      console.log('🔍 DEBUG - orgDoc.deptStructure first item:', orgDoc.deptStructure[0]?.name);
+    }
+    console.log('🔍 DEBUG - latestData.deptStructure first item:', latestData.deptStructure[0]?.name);
+
+    const deptStructure = orgDoc && orgDoc.deptStructure ? orgDoc.deptStructure : latestData.deptStructure;
+    console.log('🔍 DEBUG - Using deptStructure first item:', deptStructure[0]?.name);
 
     // 응답 데이터 구성
     const responseData = {
