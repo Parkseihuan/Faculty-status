@@ -66,7 +66,10 @@ class API {
    * GET 요청
    */
   async get(endpoint) {
-    return this.request(endpoint, { method: 'GET' });
+    return this.request(endpoint, {
+      method: 'GET',
+      cache: 'no-store' // 브라우저 캐시 사용 안 함
+    });
   }
 
   /**

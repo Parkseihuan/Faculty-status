@@ -10,6 +10,14 @@ const Organization = require('../models/Organization');
  */
 router.get('/', async (req, res) => {
   try {
+    // 캐시 방지 헤더 설정
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Surrogate-Control': 'no-store'
+    });
+
     // MongoDB에서 최신 조직 구조 조회
     const orgDoc = await Organization.getLatest();
 
