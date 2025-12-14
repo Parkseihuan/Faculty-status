@@ -66,7 +66,11 @@ class API {
    * GET 요청
    */
   async get(endpoint) {
-    return this.request(endpoint, {
+    // 캐시 방지를 위한 타임스탬프 쿼리 파라미터 추가
+    const separator = endpoint.includes('?') ? '&' : '?';
+    const timestampedEndpoint = `${endpoint}${separator}_t=${Date.now()}`;
+
+    return this.request(timestampedEndpoint, {
       method: 'GET',
       cache: 'no-store' // 브라우저 캐시 사용 안 함
     });

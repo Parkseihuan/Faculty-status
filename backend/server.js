@@ -15,6 +15,9 @@ connectDB();
 // Trust proxy (Render.com uses proxy)
 app.set('trust proxy', 1);
 
+// ETag 비활성화 (캐시 방지)
+app.set('etag', false);
+
 // Middleware
 app.use(helmet()); // 보안 헤더 설정
 app.use(cors({

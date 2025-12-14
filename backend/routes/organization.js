@@ -4,20 +4,28 @@ const authMiddleware = require('../middleware/auth');
 const Organization = require('../models/Organization');
 
 /**
+ * 캐시 방지 미들웨어
+ * 모든 조직 API 응답에 캐시 방지 헤더 적용
+ */
+const noCacheMiddleware = (req, res, next) => {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+    'Pragma': 'no-cache',
+    'Expires': '-1',
+    'Surrogate-Control': 'no-store'
+  });
+  // ETag 비활성화
+  res.removeHeader('ETag');
+  next();
+};
+
+/**
  * GET /api/organization
  * 조직 순서 조회
  * (인증 불필요 - 일반 사용자도 조회 가능)
  */
-router.get('/', async (req, res) => {
+router.get('/', noCacheMiddleware, async (req, res) => {
   try {
-    // 캐시 방지 헤더 설정
-    res.set({
-      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'Surrogate-Control': 'no-store'
-    });
-
     // MongoDB에서 최신 조직 구조 조회
     const orgDoc = await Organization.getLatest();
 
