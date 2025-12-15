@@ -529,10 +529,16 @@
 
       const calculateColumnTotal = (pos) => {
         let total = 0;
-        Object.values(facultyData).forEach(deptGroup => {
-           Object.values(deptGroup).forEach(dept => {
-               if (dept[pos]) total += dept[pos].length;
-           });
+        Object.entries(facultyData).forEach(([deptName, deptGroup]) => {
+          if (deptName === '기타') {
+            // 기타는 바로 직급별 데이터 (학과 구분 없음)
+            if (deptGroup[pos]) total += deptGroup[pos].length;
+          } else {
+            // 다른 대학은 학과별로 나뉘어 있음
+            Object.values(deptGroup).forEach(dept => {
+              if (dept[pos]) total += dept[pos].length;
+            });
+          }
         });
         return total;
       };
