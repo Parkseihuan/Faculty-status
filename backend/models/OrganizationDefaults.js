@@ -92,12 +92,17 @@ organizationDefaultsSchema.statics.updateDefault = async function(type, deptStru
   let doc = await this.getLatest();
 
   if (!doc) {
-    // 문서가 없으면 시스템 기본값으로 새로 생성
-    const systemDefault = this.getSystemDefault();
+    // 문서가 없으면 현재 조직 구조를 기본값으로 사용하여 새로 생성
+    // Organization 모델에서 현재 조직 구조 가져오기
+    const Organization = require('./Organization');
+    const currentOrg = await Organization.getLatest();
+    const currentStructure = currentOrg ? currentOrg.deptStructure : this.getSystemDefault();
+
+    // 모든 필드를 현재 조직 구조로 초기화
     doc = await this.create({
-      defaultFulltime: systemDefault,
-      defaultParttime: systemDefault,
-      defaultOther: systemDefault,
+      defaultFulltime: JSON.parse(JSON.stringify(currentStructure)),
+      defaultParttime: JSON.parse(JSON.stringify(currentStructure)),
+      defaultOther: JSON.parse(JSON.stringify(currentStructure)),
       updatedBy
     });
   }
