@@ -28,6 +28,8 @@ const uploadResult = document.getElementById('uploadResult');
 const loadOrgBtn = document.getElementById('loadOrgBtn');
 const saveOrgBtn = document.getElementById('saveOrgBtn');
 const resetOrgBtn = document.getElementById('resetOrgBtn');
+const loadDefaultsBtn = document.getElementById('loadDefaultsBtn');
+const saveAsDefaultBtn = document.getElementById('saveAsDefaultBtn');
 const orgResult = document.getElementById('orgResult');
 
 // 조직 탭 버튼들
@@ -317,6 +319,7 @@ loadOrgBtn.addEventListener('click', async () => {
     document.getElementById('orgTabs').classList.remove('hidden');
 
     saveOrgBtn.disabled = false;
+    saveAsDefaultBtn.disabled = false;
     orgResult.classList.add('hidden');
   } catch (error) {
     showOrgError('조직 데이터를 불러오는데 실패했습니다: ' + error.message);
@@ -546,6 +549,7 @@ resetOrgBtn.addEventListener('click', () => {
     renderOrgEditor('other', currentOrgData.other);
 
     saveOrgBtn.disabled = false;
+    saveAsDefaultBtn.disabled = false;
 
     orgResult.classList.remove('hidden');
     orgResult.className = 'result success';
@@ -553,6 +557,67 @@ resetOrgBtn.addEventListener('click', () => {
       <h3>✅ 초기화 완료</h3>
       <p>모든 섹션이 기본값으로 초기화되었습니다.</p>
     `;
+  }
+});
+
+/**
+ * 저장된 기본값 불러오기
+ */
+loadDefaultsBtn.addEventListener('click', async () => {
+  try {
+    const result = await api.getOrganizationDefaults();
+    const defaults = result.data;
+
+    // 각 탭에 저장된 기본값 적용
+    currentOrgData.fulltime = JSON.parse(JSON.stringify(defaults.fulltime));
+    currentOrgData.parttime = JSON.parse(JSON.stringify(defaults.parttime));
+    currentOrgData.other = JSON.parse(JSON.stringify(defaults.other));
+
+    // 모든 섹션 렌더링
+    renderOrgEditor('fulltime', currentOrgData.fulltime);
+    renderOrgEditor('parttime', currentOrgData.parttime);
+    renderOrgEditor('other', currentOrgData.other);
+
+    // 조직 탭 표시
+    document.getElementById('orgTabs').classList.remove('hidden');
+
+    saveOrgBtn.disabled = false;
+    saveAsDefaultBtn.disabled = false;
+
+    orgResult.classList.remove('hidden');
+    orgResult.className = 'result success';
+    orgResult.innerHTML = `
+      <h3>✅ 기본값 불러오기 완료</h3>
+      <p>저장된 기본값이 각 탭에 적용되었습니다.</p>
+      ${result.isSystemDefault ? '<p><small>⚠️ 아직 저장된 사용자 기본값이 없어 시스템 기본값을 사용합니다.</small></p>' : ''}
+    `;
+  } catch (error) {
+    showOrgError('기본값을 불러오는데 실패했습니다: ' + error.message);
+  }
+});
+
+/**
+ * 현재 순서를 기본값으로 저장
+ */
+saveAsDefaultBtn.addEventListener('click', async () => {
+  if (!currentOrgData[activeOrgTab]) return;
+
+  try {
+    const tabName = getOrgTabName(activeOrgTab);
+
+    if (confirm(`현재 선택된 '${tabName}' 탭의 조직 순서를 이 유형의 기본값으로 저장하시겠습니까?\n\n이 기본값은 나중에 '기본값 불러오기' 버튼으로 불러올 수 있습니다.`)) {
+      const result = await api.updateOrganizationDefault(activeOrgTab, currentOrgData[activeOrgTab]);
+
+      orgResult.classList.remove('hidden');
+      orgResult.className = 'result success';
+      orgResult.innerHTML = `
+        <h3>✅ 기본값 저장 완료!</h3>
+        <p>${result.message}</p>
+        <p><small>저장된 유형: ${tabName}</small></p>
+      `;
+    }
+  } catch (error) {
+    showOrgError('기본값 저장에 실패했습니다: ' + error.message);
   }
 });
 

@@ -225,6 +225,22 @@ class API {
   async updateOrganization(deptStructure) {
     return this.put('/organization', { deptStructure });
   }
+
+  /**
+   * 조직 순서 기본값 조회 (전임교원/비전임교원/기타)
+   */
+  async getOrganizationDefaults() {
+    return this.get('/organization/defaults');
+  }
+
+  /**
+   * 특정 교원 유형의 기본값 저장
+   * @param {string} type - 'fulltime', 'parttime', 'other' 중 하나
+   * @param {Array} deptStructure - 조직 구조 데이터
+   */
+  async updateOrganizationDefault(type, deptStructure) {
+    return this.put(`/organization/defaults/${type}`, { deptStructure });
+  }
 }
 
 // API 인스턴스 생성

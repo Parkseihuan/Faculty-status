@@ -128,6 +128,26 @@ header h1 {
   background-color: #c13d39;
 }
 
+.btn-info {
+  background-color: #0891b2;
+  color: white;
+  border: none;
+}
+
+.btn-info:hover {
+  background-color: #0e7490;
+}
+
+.btn-warning {
+  background-color: #d97706;
+  color: white;
+  border: none;
+}
+
+.btn-warning:hover {
+  background-color: #b45309;
+}
+
 .btn-sm {
   height: 28px;
   padding: 4px 10px;
