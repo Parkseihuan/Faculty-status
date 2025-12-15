@@ -45,13 +45,15 @@ router.get('/data', async (req, res) => {
       success: true,
       data: responseData,
       lastUpdated: latestData.updatedAt,
-      // 임시 디버그 정보
+      // 임시 디버그 정보 v2
+      _apiVersion: '2.0-debug',
       debug: {
         orgDocExists: !!orgDoc,
         orgDocHasDeptStructure: !!(orgDoc && orgDoc.deptStructure),
         orgFirstItem: orgDoc && orgDoc.deptStructure ? orgDoc.deptStructure[0]?.name : 'N/A',
         facultyDataFirstItem: latestData.deptStructure[0]?.name,
-        usedFirstItem: deptStructure[0]?.name
+        usedFirstItem: deptStructure[0]?.name,
+        timestamp: new Date().toISOString()
       }
     });
 
