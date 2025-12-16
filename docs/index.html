@@ -507,63 +507,94 @@
       const researchLeaveData = globalData.researchLeaveData;
 
       let html = `
-        <table>
-          <thead>
-            <tr>
-              <th colspan="4">연구년 및 휴직 교원 현황 (${currentDate})</th>
-            </tr>
-            <tr>
-              <th style="width: 15%">구분</th>
-              <th style="width: 25%">소속</th>
-              <th style="width: 15%">성명</th>
-              <th style="width: 45%">기간</th>
-            </tr>
-          </thead>
-          <tbody>
+        <div style="max-width: 1200px; margin: 0 auto;">
+          <h2 style="text-align: center; font-size: 24px; font-weight: 600; margin-bottom: 32px; color: #37352f;">
+            연구년 및 휴직 교원 현황 (${currentDate})
+          </h2>
+
+          <table style="width: 100%;">
+            <thead>
+              <tr>
+                <th style="width: 12%; text-align: center;">구분</th>
+                <th style="width: 20%; text-align: center;">기간 구분</th>
+                <th style="width: 25%; text-align: center;">소속</th>
+                <th style="width: 15%; text-align: center;">성명</th>
+                <th style="width: 28%; text-align: center;">기간</th>
+              </tr>
+            </thead>
+            <tbody>
       `;
 
-      // 연구년 - 2025학년도 전반기
+      // 연구년 데이터
       const firstCount = researchLeaveData.research.first.length;
+      const secondCount = researchLeaveData.research.second.length;
+      const totalResearchCount = firstCount + secondCount;
+
+      // 연구년 - 전반기
       researchLeaveData.research.first.forEach((item, idx) => {
         html += '<tr>';
         if (idx === 0) {
-          html += `<td rowspan="${firstCount + researchLeaveData.research.second.length}" class="dept-header dept-vertical">연구년</td>`;
-          html += `<td rowspan="${firstCount}" class="dept-name">2025학년도 전반기</td>`;
-        } else if (idx === firstCount && researchLeaveData.research.second.length > 0) {
-          html += `<td rowspan="${researchLeaveData.research.second.length}" class="dept-name">2025학년도 후반기</td>`;
+          html += `<td rowspan="${totalResearchCount}" class="dept-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; text-align: center; vertical-align: middle;">연구년</td>`;
+          if (firstCount > 0) {
+            html += `<td rowspan="${firstCount}" class="dept-name" style="background-color: #f3f4f6; font-weight: 500; text-align: center; vertical-align: middle;">2025학년도 전반기</td>`;
+          }
         }
-        html += `<td>${item.dept}</td>`;
-        html += `<td>${item.name}</td>`;
-        html += `<td>${item.period}</td>`;
+        html += `<td style="text-align: center;">${item.dept}</td>`;
+        html += `<td style="text-align: center; font-weight: 500;">${item.name}</td>`;
+        html += `<td style="text-align: center; color: #4b5563;">${item.period}</td>`;
         html += '</tr>';
       });
 
-      // 연구년 - 2025학년도 후반기
+      // 연구년 - 후반기
       researchLeaveData.research.second.forEach((item, idx) => {
         html += '<tr>';
-        if (idx === 0) {
-          html += `<td rowspan="${researchLeaveData.research.second.length}" class="dept-name">2025학년도 후반기</td>`;
+        if (idx === 0 && secondCount > 0) {
+          html += `<td rowspan="${secondCount}" class="dept-name" style="background-color: #e5e7eb; font-weight: 500; text-align: center; vertical-align: middle;">2025학년도 후반기</td>`;
         }
-        html += `<td>${item.dept}</td>`;
-        html += `<td>${item.name}</td>`;
-        html += `<td>${item.period}</td>`;
+        html += `<td style="text-align: center;">${item.dept}</td>`;
+        html += `<td style="text-align: center; font-weight: 500;">${item.name}</td>`;
+        html += `<td style="text-align: center; color: #4b5563;">${item.period}</td>`;
         html += '</tr>';
       });
 
       // 휴직
       const leaveCount = researchLeaveData.leave.length;
-      researchLeaveData.leave.forEach((item, idx) => {
-        html += '<tr>';
-        if (idx === 0) {
-          html += `<td rowspan="${leaveCount}" class="dept-header dept-vertical">휴직</td>`;
-        }
-        html += `<td>${item.dept}</td>`;
-        html += `<td>${item.name}</td>`;
-        html += `<td>${item.period}</td>`;
-        html += '</tr>';
-      });
+      if (leaveCount > 0) {
+        researchLeaveData.leave.forEach((item, idx) => {
+          html += '<tr>';
+          if (idx === 0) {
+            html += `<td rowspan="${leaveCount}" class="dept-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; font-weight: 600; text-align: center; vertical-align: middle;">휴직</td>`;
+            html += `<td rowspan="${leaveCount}" style="background-color: #fef3c7; text-align: center; vertical-align: middle;">-</td>`;
+          }
+          html += `<td style="text-align: center;">${item.dept}</td>`;
+          html += `<td style="text-align: center; font-weight: 500;">${item.name}</td>`;
+          html += `<td style="text-align: center; color: #4b5563;">${item.period}</td>`;
+          html += '</tr>';
+        });
+      }
 
-      html += '</tbody></table>';
+      html += `
+            </tbody>
+          </table>
+
+          <div style="margin-top: 24px; padding: 16px; background-color: #f9fafb; border-radius: 8px; text-align: center;">
+            <div style="display: inline-flex; gap: 32px; align-items: center;">
+              <div>
+                <span style="display: inline-block; width: 12px; height: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 2px; margin-right: 8px;"></span>
+                <span style="font-size: 14px; color: #6b7280;">연구년: ${totalResearchCount}명</span>
+              </div>
+              <div>
+                <span style="display: inline-block; width: 12px; height: 12px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 2px; margin-right: 8px;"></span>
+                <span style="font-size: 14px; color: #6b7280;">휴직: ${leaveCount}명</span>
+              </div>
+              <div style="font-weight: 600; font-size: 16px; color: #37352f;">
+                총 ${totalResearchCount + leaveCount}명
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
       document.getElementById('content').innerHTML = html;
     }
 
@@ -596,43 +627,97 @@
       const totalFemale = genderStats.reduce((sum, item) => sum + item.female, 0);
       const grandTotal = genderStats.reduce((sum, item) => sum + item.total, 0);
 
+      // 최대값 찾기 (막대 그래프 스케일링용)
+      const maxCount = Math.max(...genderStats.map(item => item.total));
+
       let html = `
-        <table>
-          <thead>
-            <tr>
-              <th colspan="4">전임교원 직급별 남녀 인원수 (${currentDate})</th>
-            </tr>
-            <tr>
-              <th style="width: 40%">구분</th>
-              <th style="width: 20%">남</th>
-              <th style="width: 20%">여</th>
-              <th style="width: 20%">합계</th>
-            </tr>
-          </thead>
-          <tbody>
+        <div style="max-width: 1000px; margin: 0 auto;">
+          <h2 style="text-align: center; font-size: 24px; font-weight: 600; margin-bottom: 16px; color: #37352f;">
+            전임교원 직급별 남녀 인원수 (${currentDate})
+          </h2>
+
+          <!-- 요약 카드 -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px;">
+            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 24px; border-radius: 12px; text-align: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">남성 교원</div>
+              <div style="font-size: 32px; font-weight: 700;">${totalMale}</div>
+              <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">${((totalMale/grandTotal)*100).toFixed(1)}%</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 24px; border-radius: 12px; text-align: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">여성 교원</div>
+              <div style="font-size: 32px; font-weight: 700;">${totalFemale}</div>
+              <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">${((totalFemale/grandTotal)*100).toFixed(1)}%</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 24px; border-radius: 12px; text-align: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">전체</div>
+              <div style="font-size: 32px; font-weight: 700;">${grandTotal}</div>
+              <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">100%</div>
+            </div>
+          </div>
+
+          <!-- 직급별 상세 -->
+          <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #37352f;">직급별 상세 현황</h3>
       `;
 
       genderStats.forEach(item => {
+        const malePercent = item.total > 0 ? (item.male / item.total * 100).toFixed(1) : 0;
+        const femalePercent = item.total > 0 ? (item.female / item.total * 100).toFixed(1) : 0;
+        const barWidth = item.total > 0 ? (item.total / maxCount * 100) : 0;
+
         html += `
-          <tr>
-            <td class="dept-header">${item.rank}</td>
-            <td>${item.male}</td>
-            <td>${item.female}</td>
-            <td class="subtotal-full">${item.total}</td>
-          </tr>
+          <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #e5e7eb;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div style="font-weight: 600; font-size: 16px; color: #37352f; min-width: 180px;">${item.rank}</div>
+              <div style="display: flex; gap: 24px; align-items: center; flex: 1; justify-content: flex-end;">
+                <div style="text-align: right;">
+                  <span style="color: #3b82f6; font-weight: 600; font-size: 18px;">${item.male}</span>
+                  <span style="color: #6b7280; font-size: 14px; margin-left: 4px;">명</span>
+                  <div style="font-size: 12px; color: #9ca3af;">남 ${malePercent}%</div>
+                </div>
+                <div style="text-align: right;">
+                  <span style="color: #ec4899; font-weight: 600; font-size: 18px;">${item.female}</span>
+                  <span style="color: #6b7280; font-size: 14px; margin-left: 4px;">명</span>
+                  <div style="font-size: 12px; color: #9ca3af;">여 ${femalePercent}%</div>
+                </div>
+                <div style="text-align: right; min-width: 60px;">
+                  <span style="font-weight: 700; font-size: 20px; color: #37352f;">${item.total}</span>
+                  <div style="font-size: 12px; color: #9ca3af;">합계</div>
+                </div>
+              </div>
+            </div>
+            <!-- 비주얼 바 -->
+            <div style="display: flex; height: 24px; border-radius: 12px; overflow: hidden; background-color: #f3f4f6; width: ${barWidth}%; max-width: 100%;">
+              <div style="background: linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%); width: ${malePercent}%; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 600;">
+                ${item.male > 0 ? item.male : ''}
+              </div>
+              <div style="background: linear-gradient(90deg, #f472b6 0%, #ec4899 100%); width: ${femalePercent}%; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 600;">
+                ${item.female > 0 ? item.female : ''}
+              </div>
+            </div>
+          </div>
         `;
       });
 
       html += `
-        <tr class="total-row">
-          <td>소계</td>
-          <td>${totalMale}</td>
-          <td>${totalFemale}</td>
-          <td>${grandTotal}</td>
-        </tr>
+          </div>
+
+          <!-- 범례 -->
+          <div style="margin-top: 24px; padding: 16px; background-color: #f9fafb; border-radius: 8px; text-align: center;">
+            <div style="display: inline-flex; gap: 32px; align-items: center;">
+              <div>
+                <span style="display: inline-block; width: 12px; height: 12px; background: #3b82f6; border-radius: 2px; margin-right: 8px;"></span>
+                <span style="font-size: 14px; color: #6b7280;">남성</span>
+              </div>
+              <div>
+                <span style="display: inline-block; width: 12px; height: 12px; background: #ec4899; border-radius: 2px; margin-right: 8px;"></span>
+                <span style="font-size: 14px; color: #6b7280;">여성</span>
+              </div>
+            </div>
+          </div>
+        </div>
       `;
 
-      html += '</tbody></table>';
       document.getElementById('content').innerHTML = html;
     }
 
