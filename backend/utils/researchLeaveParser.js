@@ -114,19 +114,29 @@ class ResearchLeaveParser {
       leave: []
     };
 
+    console.log('📊 전체 데이터 행 수:', data.length);
+    console.log('📋 첫 5행 미리보기:', data.slice(0, 5));
+
     // 헤더 행 찾기
     const headerRowIndex = this.findHeaderRow(data);
-    const headers = data[headerRowIndex];
-    const colIndex = this.findColumnIndexes(headers);
+    console.log('🔍 헤더 행 인덱스:', headerRowIndex);
 
-    console.log('연구년/휴직 컬럼 인덱스:', colIndex);
+    const headers = data[headerRowIndex];
+    console.log('📌 헤더 내용:', headers);
+
+    const colIndex = this.findColumnIndexes(headers);
+    console.log('🗂️ 컬럼 인덱스:', colIndex);
 
     // 데이터 처리
+    let processedCount = 0;
     for (let i = headerRowIndex + 1; i < data.length; i++) {
       const row = data[i];
 
       // 빈 행 건너뛰기
-      if (!row || row.every(cell => !cell)) continue;
+      if (!row || row.every(cell => !cell)) {
+        console.log(`⏭️ 행 ${i}: 빈 행 건너뜀`);
+        continue;
+      }
 
       const category = this.getCell(row, colIndex.category);
       const dept = this.getCell(row, colIndex.dept);
@@ -134,8 +144,17 @@ class ResearchLeaveParser {
       const period = this.getCell(row, colIndex.period);
       const remarks = this.getCell(row, colIndex.remarks);
 
+      if (processedCount < 3) {
+        console.log(`📝 행 ${i} 데이터:`, { category, dept, name, period, remarks });
+      }
+
       // 성명이 없으면 건너뛰기
-      if (!name) continue;
+      if (!name) {
+        console.log(`⏭️ 행 ${i}: 성명 없음 (건너뜀)`);
+        continue;
+      }
+
+      processedCount++;
 
       const entry = {
         dept: dept || '미배정',
