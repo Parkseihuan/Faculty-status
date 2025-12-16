@@ -84,6 +84,12 @@
       <button class="faculty-tab" onclick="switchTab('other')" id="tab-other">
         기타
       </button>
+      <button class="faculty-tab" onclick="switchTab('research')" id="tab-research">
+        연구년 및 휴직 교원
+      </button>
+      <button class="faculty-tab" onclick="switchTab('genderStats')" id="tab-genderStats">
+        전임교원 직급별 성별 인원
+      </button>
     </div>
 
     <div id="content" class="table-container">
@@ -474,9 +480,159 @@
       }
     }
 
+    // 연구년 및 휴직 교원 테이블 렌더링
+    function renderResearchLeaveTable() {
+      const currentDate = new Date().toLocaleDateString('ko-KR');
+
+      // 하드코딩된 데이터 (추후 API에서 가져올 예정)
+      const researchLeaveData = {
+        research: {
+          first: [
+            { dept: '유도경기지도학과', name: '전기영', period: '2025.03.01 ~ 2026.02.28' },
+            { dept: '용오름대학', name: '권혁래', period: '2025.03.01 ~ 2026.02.28' },
+            { dept: '용오름대학', name: '윤수진', period: '2025.03.01 ~ 2026.02.28' },
+            { dept: '용오름대학', name: '임남실', period: '2025.03.01 ~ 2026.02.28' },
+            { dept: '교육대학원', name: '박수연', period: '2025.03.01 ~ 2026.02.28' }
+          ],
+          second: [
+            { dept: '영화영상학과', name: '유지수', period: '2025.09.01 ~ 2026.08.31' }
+          ]
+        },
+        leave: [
+          { dept: '골프학과', name: '김순희', period: '2025.03.01 ~ 2028.04.08' }
+        ]
+      };
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th colspan="4">연구년 및 휴직 교원 현황 (${currentDate})</th>
+            </tr>
+            <tr>
+              <th style="width: 15%">구분</th>
+              <th style="width: 25%">소속</th>
+              <th style="width: 15%">성명</th>
+              <th style="width: 45%">기간</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      // 연구년 - 2025학년도 전반기
+      const firstCount = researchLeaveData.research.first.length;
+      researchLeaveData.research.first.forEach((item, idx) => {
+        html += '<tr>';
+        if (idx === 0) {
+          html += `<td rowspan="${firstCount + researchLeaveData.research.second.length}" class="dept-header dept-vertical">연구년</td>`;
+          html += `<td rowspan="${firstCount}" class="dept-name">2025학년도 전반기</td>`;
+        } else if (idx === firstCount && researchLeaveData.research.second.length > 0) {
+          html += `<td rowspan="${researchLeaveData.research.second.length}" class="dept-name">2025학년도 후반기</td>`;
+        }
+        html += `<td>${item.dept}</td>`;
+        html += `<td>${item.name}</td>`;
+        html += `<td>${item.period}</td>`;
+        html += '</tr>';
+      });
+
+      // 연구년 - 2025학년도 후반기
+      researchLeaveData.research.second.forEach((item, idx) => {
+        html += '<tr>';
+        if (idx === 0) {
+          html += `<td rowspan="${researchLeaveData.research.second.length}" class="dept-name">2025학년도 후반기</td>`;
+        }
+        html += `<td>${item.dept}</td>`;
+        html += `<td>${item.name}</td>`;
+        html += `<td>${item.period}</td>`;
+        html += '</tr>';
+      });
+
+      // 휴직
+      const leaveCount = researchLeaveData.leave.length;
+      researchLeaveData.leave.forEach((item, idx) => {
+        html += '<tr>';
+        if (idx === 0) {
+          html += `<td rowspan="${leaveCount}" class="dept-header dept-vertical">휴직</td>`;
+        }
+        html += `<td>${item.dept}</td>`;
+        html += `<td>${item.name}</td>`;
+        html += `<td>${item.period}</td>`;
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('content').innerHTML = html;
+    }
+
+    // 전임교원 직급별 성별 인원 테이블 렌더링
+    function renderGenderStatsTable() {
+      const currentDate = new Date().toLocaleDateString('ko-KR');
+
+      // 하드코딩된 데이터 (추후 API 또는 계산으로 생성 예정)
+      const genderStats = [
+        { rank: '교수', male: 44, female: 14, total: 58 },
+        { rank: '부교수', male: 14, female: 4, total: 18 },
+        { rank: '조교수', male: 19, female: 11, total: 30 },
+        { rank: '부교수(비정년트랙)', male: 15, female: 28, total: 43 },
+        { rank: '조교수(비정년트랙)', male: 22, female: 17, total: 39 }
+      ];
+
+      const totalMale = genderStats.reduce((sum, item) => sum + item.male, 0);
+      const totalFemale = genderStats.reduce((sum, item) => sum + item.female, 0);
+      const grandTotal = genderStats.reduce((sum, item) => sum + item.total, 0);
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th colspan="4">전임교원 직급별 남녀 인원수 (${currentDate})</th>
+            </tr>
+            <tr>
+              <th style="width: 40%">구분</th>
+              <th style="width: 20%">남</th>
+              <th style="width: 20%">여</th>
+              <th style="width: 20%">합계</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      genderStats.forEach(item => {
+        html += `
+          <tr>
+            <td class="dept-header">${item.rank}</td>
+            <td>${item.male}</td>
+            <td>${item.female}</td>
+            <td class="subtotal-full">${item.total}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+        <tr class="total-row">
+          <td>소계</td>
+          <td>${totalMale}</td>
+          <td>${totalFemale}</td>
+          <td>${grandTotal}</td>
+        </tr>
+      `;
+
+      html += '</tbody></table>';
+      document.getElementById('content').innerHTML = html;
+    }
+
     // 테이블 렌더링 (탭별로 다른 컬럼 표시)
     function renderTable() {
       if (!globalData) return;
+
+      // 새로운 탭 처리
+      if (currentTab === 'research') {
+        renderResearchLeaveTable();
+        return;
+      } else if (currentTab === 'genderStats') {
+        renderGenderStatsTable();
+        return;
+      }
 
       const { facultyData, deptStructure, fullTimePositions, partTimePositions, otherPositions } = globalData;
       const currentDate = new Date().toLocaleDateString('ko-KR');
