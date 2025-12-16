@@ -106,6 +106,83 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
 });
 
 /**
+ * POST /api/upload/research-leave
+ * 연구년 및 휴직 교원 엑셀 파일 업로드
+ * (관리자 인증 필요)
+ */
+const researchLeaveParser = require('../utils/researchLeaveParser');
+const ResearchLeaveData = require('../models/ResearchLeaveData');
+
+router.post('/research-leave', authMiddleware, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        error: '파일이 업로드되지 않았습니다.'
+      });
+    }
+
+    console.log('연구년/휴직 파일 업로드:', req.file.filename);
+
+    // 엑셀 파일 파싱
+    const parsedData = await researchLeaveParser.parseExcelFile(req.file.path);
+
+    // MongoDB에 저장
+    const savedData = await ResearchLeaveData.updateData({
+      research: parsedData.research,
+      leave: parsedData.leave,
+      uploadInfo: {
+        filename: req.file.originalname,
+        uploadedAt: new Date(),
+        fileSize: req.file.size,
+        uploadedBy: req.user?.username || 'admin'
+      }
+    });
+
+    console.log('✅ 연구년/휴직 데이터 저장 완료:', savedData._id);
+
+    // 업로드된 파일 삭제
+    try {
+      await fs.unlink(req.file.path);
+    } catch (error) {
+      console.error('파일 삭제 실패:', error);
+    }
+
+    const totalCount =
+      parsedData.research.first.length +
+      parsedData.research.second.length +
+      parsedData.leave.length;
+
+    res.json({
+      success: true,
+      message: '연구년/휴직 교원 데이터가 성공적으로 업로드되었습니다.',
+      stats: {
+        researchFirst: parsedData.research.first.length,
+        researchSecond: parsedData.research.second.length,
+        leave: parsedData.leave.length,
+        total: totalCount
+      },
+      uploadedAt: savedData.uploadInfo.uploadedAt
+    });
+
+  } catch (error) {
+    console.error('연구년/휴직 업로드 오류:', error);
+
+    // 에러 발생 시 파일 삭제
+    if (req.file) {
+      try {
+        await fs.unlink(req.file.path);
+      } catch (unlinkError) {
+        console.error('파일 삭제 실패:', unlinkError);
+      }
+    }
+
+    res.status(500).json({
+      error: error.message || '파일 처리 중 오류가 발생했습니다.'
+    });
+  }
+});
+
+/**
  * GET /api/upload/history
  * 업로드 기록 조회
  * (관리자 인증 필요)

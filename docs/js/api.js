@@ -204,6 +204,13 @@ class API {
   }
 
   /**
+   * 연구년/휴직 교원 파일 업로드
+   */
+  async uploadResearchLeave(file) {
+    return this.uploadFile('/upload/research-leave', file);
+  }
+
+  /**
    * 업로드 기록 조회
    */
   async getUploadHistory() {

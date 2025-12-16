@@ -276,6 +276,130 @@ uploadBtn.addEventListener('click', async () => {
   }
 });
 
+// ===== 연구년/휴직 교원 업로드 =====
+
+// DOM 요소
+const researchUploadArea = document.getElementById('researchUploadArea');
+const researchFileInput = document.getElementById('researchFileInput');
+const researchFileInfo = document.getElementById('researchFileInfo');
+const researchFileName = document.getElementById('researchFileName');
+const researchFileSize = document.getElementById('researchFileSize');
+const researchUploadBtn = document.getElementById('researchUploadBtn');
+const researchCancelBtn = document.getElementById('researchCancelBtn');
+const researchUploadProgress = document.getElementById('researchUploadProgress');
+const researchUploadResult = document.getElementById('researchUploadResult');
+
+let selectedResearchFile = null;
+
+/**
+ * 드래그 앤 드롭 (연구년/휴직)
+ */
+researchUploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  researchUploadArea.classList.add('dragover');
+});
+
+researchUploadArea.addEventListener('dragleave', () => {
+  researchUploadArea.classList.remove('dragover');
+});
+
+researchUploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  researchUploadArea.classList.remove('dragover');
+
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    handleResearchFileSelect(files[0]);
+  }
+});
+
+/**
+ * 파일 선택 (연구년/휴직)
+ */
+researchFileInput.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) {
+    handleResearchFileSelect(e.target.files[0]);
+  }
+});
+
+/**
+ * 파일 선택 처리 (연구년/휴직)
+ */
+function handleResearchFileSelect(file) {
+  // 파일 확장자 확인
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx', 'xls'].includes(ext)) {
+    alert('엑셀 파일(.xlsx, .xls)만 업로드 가능합니다.');
+    return;
+  }
+
+  selectedResearchFile = file;
+  researchFileName.textContent = file.name;
+  researchFileSize.textContent = formatFileSize(file.size);
+
+  researchUploadArea.classList.add('hidden');
+  researchFileInfo.classList.remove('hidden');
+  researchUploadResult.classList.add('hidden');
+}
+
+/**
+ * 업로드 취소 (연구년/휴직)
+ */
+researchCancelBtn.addEventListener('click', () => {
+  selectedResearchFile = null;
+  researchFileInput.value = '';
+  researchUploadArea.classList.remove('hidden');
+  researchFileInfo.classList.add('hidden');
+  researchUploadResult.classList.add('hidden');
+});
+
+/**
+ * 파일 업로드 (연구년/휴직)
+ */
+researchUploadBtn.addEventListener('click', async () => {
+  if (!selectedResearchFile) return;
+
+  try {
+    researchUploadProgress.classList.remove('hidden');
+    researchUploadResult.classList.add('hidden');
+    researchUploadBtn.disabled = true;
+    researchCancelBtn.disabled = true;
+
+    const result = await api.uploadResearchLeave(selectedResearchFile);
+
+    researchUploadProgress.classList.add('hidden');
+    researchUploadResult.classList.remove('hidden');
+    researchUploadResult.className = 'result success';
+    researchUploadResult.innerHTML = `
+      <h3>✅ 업로드 성공!</h3>
+      <p>${result.message}</p>
+      <p><strong>연구년 (전반기):</strong> ${result.stats.researchFirst}명</p>
+      <p><strong>연구년 (후반기):</strong> ${result.stats.researchSecond}명</p>
+      <p><strong>휴직:</strong> ${result.stats.leave}명</p>
+      <p><strong>총 인원:</strong> ${result.stats.total}명</p>
+      <p><strong>업로드 시간:</strong> ${new Date(result.uploadedAt).toLocaleString('ko-KR')}</p>
+    `;
+
+    // 초기화
+    selectedResearchFile = null;
+    researchFileInput.value = '';
+    researchUploadArea.classList.remove('hidden');
+    researchFileInfo.classList.add('hidden');
+
+  } catch (error) {
+    researchUploadProgress.classList.add('hidden');
+    researchUploadResult.classList.remove('hidden');
+    researchUploadResult.className = 'result error';
+    researchUploadResult.innerHTML = `
+      <h3>❌ 업로드 실패</h3>
+      <p>${error.message}</p>
+    `;
+  } finally {
+    researchUploadBtn.disabled = false;
+    researchCancelBtn.disabled = false;
+  }
+});
+
 // ===== 조직 순서 설정 =====
 
 /**

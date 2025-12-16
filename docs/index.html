@@ -515,11 +515,12 @@
           <table style="width: 100%;">
             <thead>
               <tr>
-                <th style="width: 12%; text-align: center;">구분</th>
-                <th style="width: 20%; text-align: center;">기간 구분</th>
-                <th style="width: 25%; text-align: center;">소속</th>
-                <th style="width: 15%; text-align: center;">성명</th>
-                <th style="width: 28%; text-align: center;">기간</th>
+                <th style="width: 10%; text-align: center;">구분</th>
+                <th style="width: 16%; text-align: center;">기간 구분</th>
+                <th style="width: 20%; text-align: center;">소속</th>
+                <th style="width: 12%; text-align: center;">성명</th>
+                <th style="width: 22%; text-align: center;">기간</th>
+                <th style="width: 20%; text-align: center;">비고</th>
               </tr>
             </thead>
             <tbody>
@@ -542,6 +543,7 @@
         html += `<td style="text-align: center;">${item.dept}</td>`;
         html += `<td style="text-align: center; font-weight: 500;">${item.name}</td>`;
         html += `<td style="text-align: center; color: #4b5563;">${item.period}</td>`;
+        html += `<td style="text-align: center; color: #6b7280; font-size: 13px;">${item.remarks || '-'}</td>`;
         html += '</tr>';
       });
 
@@ -554,6 +556,7 @@
         html += `<td style="text-align: center;">${item.dept}</td>`;
         html += `<td style="text-align: center; font-weight: 500;">${item.name}</td>`;
         html += `<td style="text-align: center; color: #4b5563;">${item.period}</td>`;
+        html += `<td style="text-align: center; color: #6b7280; font-size: 13px;">${item.remarks || '-'}</td>`;
         html += '</tr>';
       });
 
@@ -569,6 +572,7 @@
           html += `<td style="text-align: center;">${item.dept}</td>`;
           html += `<td style="text-align: center; font-weight: 500;">${item.name}</td>`;
           html += `<td style="text-align: center; color: #4b5563;">${item.period}</td>`;
+          html += `<td style="text-align: center; color: #6b7280; font-size: 13px;">${item.remarks || '-'}</td>`;
           html += '</tr>';
         });
       }

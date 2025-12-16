@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const FacultyData = require('../models/FacultyData');
 const Organization = require('../models/Organization');
+const ResearchLeaveData = require('../models/ResearchLeaveData');
 
 /**
  * GET /api/faculty/data
@@ -23,14 +24,16 @@ router.get('/data', async (req, res) => {
 
     // Organization 모델에서 최신 조직 순서 조회
     const orgDoc = await Organization.getLatest();
-    console.log('🔍 DEBUG - orgDoc:', orgDoc ? 'EXISTS' : 'NULL');
-    if (orgDoc && orgDoc.deptStructure) {
-      console.log('🔍 DEBUG - orgDoc.deptStructure first item:', orgDoc.deptStructure[0]?.name);
-    }
-    console.log('🔍 DEBUG - latestData.deptStructure first item:', latestData.deptStructure[0]?.name);
-
     const deptStructure = orgDoc && orgDoc.deptStructure ? orgDoc.deptStructure : latestData.deptStructure;
-    console.log('🔍 DEBUG - Using deptStructure first item:', deptStructure[0]?.name);
+
+    // 연구년/휴직 데이터 조회 (별도 모델에서)
+    const researchLeaveDoc = await ResearchLeaveData.getLatest();
+    const researchLeaveData = researchLeaveDoc
+      ? {
+          research: researchLeaveDoc.research || { first: [], second: [] },
+          leave: researchLeaveDoc.leave || []
+        }
+      : { research: { first: [], second: [] }, leave: [] };
 
     // 응답 데이터 구성
     const responseData = {
@@ -39,24 +42,14 @@ router.get('/data', async (req, res) => {
       fullTimePositions: latestData.fullTimePositions,
       partTimePositions: latestData.partTimePositions,
       otherPositions: latestData.otherPositions,
-      researchLeaveData: latestData.researchLeaveData || { research: { first: [], second: [] }, leave: [] },
+      researchLeaveData: researchLeaveData, // 별도로 업로드된 연구년/휴직 데이터
       genderStats: latestData.genderStats || []
     };
 
     res.json({
       success: true,
       data: responseData,
-      lastUpdated: latestData.updatedAt,
-      // 임시 디버그 정보 v2
-      _apiVersion: '2.0-debug',
-      debug: {
-        orgDocExists: !!orgDoc,
-        orgDocHasDeptStructure: !!(orgDoc && orgDoc.deptStructure),
-        orgFirstItem: orgDoc && orgDoc.deptStructure ? orgDoc.deptStructure[0]?.name : 'N/A',
-        facultyDataFirstItem: latestData.deptStructure[0]?.name,
-        usedFirstItem: deptStructure[0]?.name,
-        timestamp: new Date().toISOString()
-      }
+      lastUpdated: latestData.updatedAt
     });
 
   } catch (error) {
