@@ -482,12 +482,28 @@
 
     // 연구년 및 휴직 교원 테이블 렌더링
     function renderResearchLeaveTable() {
-      if (!globalData || !globalData.researchLeaveData) {
+      const currentDate = new Date().toLocaleDateString('ko-KR');
+
+      if (!globalData) {
         document.getElementById('content').innerHTML = '<div class="error">⚠️ 데이터를 불러올 수 없습니다.</div>';
         return;
       }
 
-      const currentDate = new Date().toLocaleDateString('ko-KR');
+      // 데이터가 없거나 비어있는 경우
+      if (!globalData.researchLeaveData ||
+          (!globalData.researchLeaveData.research && !globalData.researchLeaveData.leave)) {
+        document.getElementById('content').innerHTML = `
+          <div class="info-message" style="text-align: center; padding: 40px; color: #666;">
+            <h3 style="margin-bottom: 16px;">📋 데이터 없음</h3>
+            <p>연구년 및 휴직 교원 데이터를 표시하려면 관리자 페이지에서 새 엑셀 파일을 업로드해주세요.</p>
+            <p style="margin-top: 12px; font-size: 14px; color: #999;">
+              기존 데이터는 이 기능이 추가되기 전에 업로드되어 해당 정보가 포함되지 않았습니다.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
       const researchLeaveData = globalData.researchLeaveData;
 
       let html = `
@@ -553,12 +569,27 @@
 
     // 전임교원 직급별 성별 인원 테이블 렌더링
     function renderGenderStatsTable() {
-      if (!globalData || !globalData.genderStats) {
+      const currentDate = new Date().toLocaleDateString('ko-KR');
+
+      if (!globalData) {
         document.getElementById('content').innerHTML = '<div class="error">⚠️ 데이터를 불러올 수 없습니다.</div>';
         return;
       }
 
-      const currentDate = new Date().toLocaleDateString('ko-KR');
+      // 데이터가 없거나 비어있는 경우
+      if (!globalData.genderStats || globalData.genderStats.length === 0) {
+        document.getElementById('content').innerHTML = `
+          <div class="info-message" style="text-align: center; padding: 40px; color: #666;">
+            <h3 style="margin-bottom: 16px;">📋 데이터 없음</h3>
+            <p>전임교원 직급별 성별 인원 통계를 표시하려면 관리자 페이지에서 새 엑셀 파일을 업로드해주세요.</p>
+            <p style="margin-top: 12px; font-size: 14px; color: #999;">
+              기존 데이터는 이 기능이 추가되기 전에 업로드되어 해당 정보가 포함되지 않았습니다.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
       const genderStats = globalData.genderStats;
 
       const totalMale = genderStats.reduce((sum, item) => sum + item.male, 0);
