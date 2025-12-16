@@ -256,12 +256,20 @@ class ExcelParser {
 
     console.log(`활성 상태 인원: ${activeCount}, 처리된 인원: ${processedCount}`);
 
+    // 연구년 및 휴직 교원 데이터 추출
+    const researchLeaveData = this.extractResearchLeaveData(data, dataStartRow, colIndex);
+
+    // 전임교원 성별 통계 계산
+    const genderStats = this.calculateGenderStats(result);
+
     return {
       facultyData: result,
       deptStructure: deptStructure,
       fullTimePositions: this.fullTimePositions,
       partTimePositions: this.partTimePositions,
       otherPositions: this.otherPositions,
+      researchLeaveData: researchLeaveData,
+      genderStats: genderStats,
       stats: {
         total: activeCount,
         processed: processedCount
@@ -556,6 +564,159 @@ class ExcelParser {
       { name: '취창업지원센터', subDepts: [] },
       { name: '인권센터', subDepts: [] }
     ];
+  }
+
+  /**
+   * 연구년 및 휴직 교원 데이터 추출
+   */
+  extractResearchLeaveData(data, dataStartRow, colIndex) {
+    const researchLeaveData = {
+      research: {
+        first: [],  // 전반기
+        second: []  // 후반기
+      },
+      leave: []
+    };
+
+    for (let i = dataStartRow; i < data.length; i++) {
+      const row = data[i];
+      const rowData = this.extractRowData(row, colIndex);
+
+      // 재직구분이 연구년 또는 휴직인 경우만 처리
+      if (!rowData.status || !rowData.name) continue;
+
+      if (rowData.status.includes('연구년')) {
+        // 재임용종료일로 전반기/후반기 구분
+        const endDate = rowData.reappointmentEnd || '';
+        const isSemester2 = endDate.includes('09.') || endDate.includes('08.');
+
+        const facultyInfo = {
+          dept: rowData.dept || '미배정',
+          name: rowData.name,
+          period: this.formatPeriod(rowData.firstAppointmentStart, rowData.reappointmentEnd)
+        };
+
+        if (isSemester2) {
+          researchLeaveData.research.second.push(facultyInfo);
+        } else {
+          researchLeaveData.research.first.push(facultyInfo);
+        }
+      } else if (rowData.status.includes('휴직')) {
+        researchLeaveData.leave.push({
+          dept: rowData.dept || '미배정',
+          name: rowData.name,
+          period: this.formatPeriod(rowData.firstAppointmentStart, rowData.reappointmentEnd)
+        });
+      }
+    }
+
+    console.log('연구년 및 휴직 데이터:', {
+      researchFirst: researchLeaveData.research.first.length,
+      researchSecond: researchLeaveData.research.second.length,
+      leave: researchLeaveData.leave.length
+    });
+
+    return researchLeaveData;
+  }
+
+  /**
+   * 전임교원 성별 통계 계산
+   */
+  calculateGenderStats(facultyData) {
+    const stats = {
+      '교수': { male: 0, female: 0 },
+      '부교수': { male: 0, female: 0 },
+      '조교수': { male: 0, female: 0 },
+      '부교수(비정년트랙)': { male: 0, female: 0 },
+      '조교수(비정년트랙)': { male: 0, female: 0 }
+    };
+
+    // facultyData에서 전임교원만 집계
+    Object.entries(facultyData).forEach(([deptName, deptGroup]) => {
+      // 평면 구조인지 확인
+      const isFlat = Array.isArray(deptGroup[this.fullTimePositions[0]]);
+
+      if (isFlat) {
+        // 평면 구조: 직접 직급별로 순회
+        this.fullTimePositions.forEach(position => {
+          if (deptGroup[position] && Array.isArray(deptGroup[position])) {
+            deptGroup[position].forEach(person => {
+              if (person.gender === '남' || person.gender === '남성' || person.gender === 'M') {
+                stats[position].male++;
+              } else if (person.gender === '여' || person.gender === '여성' || person.gender === 'F') {
+                stats[position].female++;
+              }
+            });
+          }
+        });
+      } else {
+        // 중첩 구조: 학과별로 순회
+        Object.values(deptGroup).forEach(subDept => {
+          if (!subDept || typeof subDept !== 'object') return;
+
+          this.fullTimePositions.forEach(position => {
+            if (subDept[position] && Array.isArray(subDept[position])) {
+              subDept[position].forEach(person => {
+                if (person.gender === '남' || person.gender === '남성' || person.gender === 'M') {
+                  stats[position].male++;
+                } else if (person.gender === '여' || person.gender === '여성' || person.gender === 'F') {
+                  stats[position].female++;
+                }
+              });
+            }
+          });
+        });
+      }
+    });
+
+    // 배열 형태로 변환
+    const genderStats = this.fullTimePositions.map(position => ({
+      rank: position,
+      male: stats[position].male,
+      female: stats[position].female,
+      total: stats[position].male + stats[position].female
+    }));
+
+    console.log('성별 통계:', genderStats);
+
+    return genderStats;
+  }
+
+  /**
+   * 기간 포맷팅 (시작일 ~ 종료일)
+   */
+  formatPeriod(startDate, endDate) {
+    const formatDate = (date) => {
+      if (!date) return '';
+      if (typeof date === 'string') {
+        // 이미 포맷팅된 경우
+        if (date.includes('.')) return date;
+        // YYYY-MM-DD 형식인 경우
+        if (date.includes('-')) {
+          const parts = date.split('-');
+          return `${parts[0]}.${parts[1]}.${parts[2]}`;
+        }
+      }
+      if (date instanceof Date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}.${month}.${day}`;
+      }
+      return '';
+    };
+
+    const start = formatDate(startDate);
+    const end = formatDate(endDate);
+
+    if (start && end) {
+      return `${start} ~ ${end}`;
+    } else if (start) {
+      return `${start} ~`;
+    } else if (end) {
+      return `~ ${end}`;
+    }
+    return '';
   }
 }
 

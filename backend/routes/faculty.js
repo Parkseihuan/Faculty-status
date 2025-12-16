@@ -38,7 +38,9 @@ router.get('/data', async (req, res) => {
       deptStructure: deptStructure, // Organization 모델의 최신 조직 순서 사용
       fullTimePositions: latestData.fullTimePositions,
       partTimePositions: latestData.partTimePositions,
-      otherPositions: latestData.otherPositions
+      otherPositions: latestData.otherPositions,
+      researchLeaveData: latestData.researchLeaveData || { research: { first: [], second: [] }, leave: [] },
+      genderStats: latestData.genderStats || []
     };
 
     res.json({

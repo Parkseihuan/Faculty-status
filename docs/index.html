@@ -482,26 +482,13 @@
 
     // 연구년 및 휴직 교원 테이블 렌더링
     function renderResearchLeaveTable() {
-      const currentDate = new Date().toLocaleDateString('ko-KR');
+      if (!globalData || !globalData.researchLeaveData) {
+        document.getElementById('content').innerHTML = '<div class="error">⚠️ 데이터를 불러올 수 없습니다.</div>';
+        return;
+      }
 
-      // 하드코딩된 데이터 (추후 API에서 가져올 예정)
-      const researchLeaveData = {
-        research: {
-          first: [
-            { dept: '유도경기지도학과', name: '전기영', period: '2025.03.01 ~ 2026.02.28' },
-            { dept: '용오름대학', name: '권혁래', period: '2025.03.01 ~ 2026.02.28' },
-            { dept: '용오름대학', name: '윤수진', period: '2025.03.01 ~ 2026.02.28' },
-            { dept: '용오름대학', name: '임남실', period: '2025.03.01 ~ 2026.02.28' },
-            { dept: '교육대학원', name: '박수연', period: '2025.03.01 ~ 2026.02.28' }
-          ],
-          second: [
-            { dept: '영화영상학과', name: '유지수', period: '2025.09.01 ~ 2026.08.31' }
-          ]
-        },
-        leave: [
-          { dept: '골프학과', name: '김순희', period: '2025.03.01 ~ 2028.04.08' }
-        ]
-      };
+      const currentDate = new Date().toLocaleDateString('ko-KR');
+      const researchLeaveData = globalData.researchLeaveData;
 
       let html = `
         <table>
@@ -566,16 +553,13 @@
 
     // 전임교원 직급별 성별 인원 테이블 렌더링
     function renderGenderStatsTable() {
-      const currentDate = new Date().toLocaleDateString('ko-KR');
+      if (!globalData || !globalData.genderStats) {
+        document.getElementById('content').innerHTML = '<div class="error">⚠️ 데이터를 불러올 수 없습니다.</div>';
+        return;
+      }
 
-      // 하드코딩된 데이터 (추후 API 또는 계산으로 생성 예정)
-      const genderStats = [
-        { rank: '교수', male: 44, female: 14, total: 58 },
-        { rank: '부교수', male: 14, female: 4, total: 18 },
-        { rank: '조교수', male: 19, female: 11, total: 30 },
-        { rank: '부교수(비정년트랙)', male: 15, female: 28, total: 43 },
-        { rank: '조교수(비정년트랙)', male: 22, female: 17, total: 39 }
-      ];
+      const currentDate = new Date().toLocaleDateString('ko-KR');
+      const genderStats = globalData.genderStats;
 
       const totalMale = genderStats.reduce((sum, item) => sum + item.male, 0);
       const totalFemale = genderStats.reduce((sum, item) => sum + item.female, 0);

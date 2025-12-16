@@ -36,6 +36,21 @@ const facultyDataSchema = new mongoose.Schema({
     required: true
   },
 
+  // 연구년 및 휴직 교원 데이터
+  researchLeaveData: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {
+      research: { first: [], second: [] },
+      leave: []
+    }
+  },
+
+  // 전임교원 성별 통계
+  genderStats: {
+    type: Array,
+    default: []
+  },
+
   // 통계 정보
   stats: {
     total: Number,
