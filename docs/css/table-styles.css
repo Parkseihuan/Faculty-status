@@ -190,6 +190,8 @@ th {
   text-transform: none;
   white-space: nowrap;
   background-color: white !important;
+  position: relative;
+  z-index: 999;
 }
 
 /* 제목 행 */
@@ -208,10 +210,9 @@ thead tr:nth-child(2) th {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* tbody가 thead 아래에 표시되도록 */
+/* tbody는 z-index 없음 - thead가 자연스럽게 위에 표시됨 */
 tbody {
-  position: relative;
-  z-index: 1;
+  background-color: white;
 }
 
 /* ========================================
