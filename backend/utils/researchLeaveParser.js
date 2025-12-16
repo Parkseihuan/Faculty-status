@@ -133,48 +133,74 @@ class ResearchLeaveParser {
       const row = data[i];
 
       // 빈 행 건너뛰기
-      if (!row || row.every(cell => !cell)) {
-        console.log(`⏭️ 행 ${i}: 빈 행 건너뜀`);
-        continue;
-      }
+      if (!row || row.every(cell => !cell)) continue;
 
-      const category = this.getCell(row, colIndex.category);
+      const college = this.getCell(row, colIndex.college);
       const dept = this.getCell(row, colIndex.dept);
       const name = this.getCell(row, colIndex.name);
-      const period = this.getCell(row, colIndex.period);
-      const remarks = this.getCell(row, colIndex.remarks);
+      const employmentStatus = this.getCell(row, colIndex.employmentStatus);
+      const dispatchStart = this.getCell(row, colIndex.dispatchStart);
+      const dispatchEnd = this.getCell(row, colIndex.dispatchEnd);
+      const dispatchOrg = this.getCell(row, colIndex.dispatchOrg);
 
-      if (processedCount < 3) {
-        console.log(`📝 행 ${i} 데이터:`, { category, dept, name, period, remarks });
+      if (processedCount < 5) {
+        console.log(`📝 행 ${i} 데이터:`, {
+          college, dept, name, employmentStatus,
+          dispatchStart, dispatchEnd, dispatchOrg
+        });
       }
 
       // 성명이 없으면 건너뛰기
-      if (!name) {
-        console.log(`⏭️ 행 ${i}: 성명 없음 (건너뜀)`);
-        continue;
-      }
+      if (!name) continue;
 
       processedCount++;
 
+      // 파견 기간 조합
+      let period = '';
+      if (dispatchStart && dispatchEnd) {
+        period = `${dispatchStart} ~ ${dispatchEnd}`;
+      } else if (dispatchStart) {
+        period = `${dispatchStart} ~`;
+      } else if (dispatchEnd) {
+        period = `~ ${dispatchEnd}`;
+      }
+
+      // 소속: 대학 > 학과 우선순위
+      const deptName = dept || college || '미배정';
+
       const entry = {
-        dept: dept || '미배정',
+        dept: deptName,
         name: name,
-        period: period || '',
-        remarks: remarks || ''
+        period: period,
+        remarks: dispatchOrg || '' // 파견교/파견기관을 비고로 사용
       };
 
-      // 구분에 따라 분류
-      const categoryStr = String(category || '').toLowerCase();
+      // 재직구분으로 연구년/휴직 분류
+      const statusStr = String(employmentStatus || '').toLowerCase();
 
-      if (categoryStr.includes('연구년')) {
-        // 전반기/후반기 구분
-        if (categoryStr.includes('후반기') || categoryStr.includes('2학기')) {
-          result.research.second.push(entry);
-        } else {
+      if (statusStr.includes('연구년') || statusStr.includes('파견')) {
+        // 전반기/후반기 구분 (기간으로 판단 - 3~8월 시작이면 전반기, 9~2월 시작이면 후반기)
+        const startDate = dispatchStart ? String(dispatchStart) : '';
+        const month = this.extractMonth(startDate);
+
+        if (month >= 3 && month <= 8) {
           result.research.first.push(entry);
+          if (processedCount <= 5) console.log(`  ➡️ 연구년 전반기로 분류`);
+        } else if (month >= 9 || month <= 2) {
+          result.research.second.push(entry);
+          if (processedCount <= 5) console.log(`  ➡️ 연구년 후반기로 분류`);
+        } else {
+          // 월 정보가 없으면 기본적으로 전반기
+          result.research.first.push(entry);
+          if (processedCount <= 5) console.log(`  ➡️ 연구년 전반기로 분류 (기본값)`);
         }
-      } else if (categoryStr.includes('휴직')) {
+      } else if (statusStr.includes('휴직')) {
         result.leave.push(entry);
+        if (processedCount <= 5) console.log(`  ➡️ 휴직으로 분류`);
+      } else {
+        // 재직구분 정보가 없으면 기본적으로 연구년 전반기로 분류
+        result.research.first.push(entry);
+        if (processedCount <= 5) console.log(`  ➡️ 연구년 전반기로 분류 (재직구분 없음)`);
       }
     }
 
@@ -191,9 +217,10 @@ class ResearchLeaveParser {
    * 헤더 행 찾기
    */
   findHeaderRow(data) {
-    const requiredColumns = ['구분', '소속', '성명', '기간'];
+    // 실제 파일 구조: 순번, 대학, 학과, 직렬, 직급, 성명, 교번, 최초임용일, 재직구분, 파견시작일, 파견종료일, 파견교/파견기관, 연락처
+    const requiredColumns = ['성명', '학과', '파견시작일'];
 
-    for (let i = 0; i < Math.min(5, data.length); i++) {
+    for (let i = 0; i < Math.min(10, data.length); i++) {
       const row = data[i];
       if (!row || row.length === 0) continue;
 
@@ -204,12 +231,13 @@ class ResearchLeaveParser {
         }
       }
 
-      if (matchCount >= 3) {
-        console.log(`헤더 행 발견: ${i}번째 행`);
+      if (matchCount >= 2) {
+        console.log(`✅ 헤더 행 발견: ${i}번째 행`);
         return i;
       }
     }
 
+    console.warn('⚠️ 헤더를 찾을 수 없습니다. 기본값 0 사용');
     return 0;
   }
 
@@ -218,11 +246,13 @@ class ResearchLeaveParser {
    */
   findColumnIndexes(headers) {
     return {
-      category: this.findHeaderIndex(headers, ['구분']),
-      dept: this.findHeaderIndex(headers, ['소속', '부서']),
+      college: this.findHeaderIndex(headers, ['대학']),
+      dept: this.findHeaderIndex(headers, ['학과', '소속']),
       name: this.findHeaderIndex(headers, ['성명', '이름']),
-      period: this.findHeaderIndex(headers, ['기간']),
-      remarks: this.findHeaderIndex(headers, ['비고', '특이사항', '메모'])
+      employmentStatus: this.findHeaderIndex(headers, ['재직구분', '구분']),
+      dispatchStart: this.findHeaderIndex(headers, ['파견시작일', '시작일']),
+      dispatchEnd: this.findHeaderIndex(headers, ['파견종료일', '종료일']),
+      dispatchOrg: this.findHeaderIndex(headers, ['파견교/파견기관', '파견교', '파견기관'])
     };
   }
 
@@ -259,6 +289,35 @@ class ResearchLeaveParser {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}.${month}.${day}`;
+  }
+
+  /**
+   * 날짜 문자열에서 월 추출
+   * 예: "2025.03.01" -> 3, "2025-09-01" -> 9
+   */
+  extractMonth(dateStr) {
+    if (!dateStr) return 0;
+
+    const str = String(dateStr);
+
+    // Date 객체인 경우
+    if (dateStr instanceof Date) {
+      return dateStr.getMonth() + 1;
+    }
+
+    // "2025.03.01" 또는 "2025-03-01" 형식
+    const match = str.match(/\d{4}[.-](\d{1,2})[.-]\d{1,2}/);
+    if (match) {
+      return parseInt(match[1], 10);
+    }
+
+    // "2025.03" 형식
+    const match2 = str.match(/\d{4}[.-](\d{1,2})/);
+    if (match2) {
+      return parseInt(match2[1], 10);
+    }
+
+    return 0;
   }
 }
 
