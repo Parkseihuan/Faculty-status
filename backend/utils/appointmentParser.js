@@ -202,10 +202,33 @@ class AppointmentParser {
       // 소속: 학과 > 대학 우선순위
       const deptName = currentRecord.dept || currentRecord.college || '미배정';
 
-      // 휴직 구분을 비고에 추가
+      // 이전 휴직 이력을 찾아서 비고에 추가
+      const previousRecords = records.filter(r => r !== currentRecord && r.leaveStart && r.leaveEnd);
+
+      // 이전 레코드를 시작일 기준으로 정렬 (오래된 순)
+      previousRecords.sort((a, b) => {
+        const dateA = this.parseDate(a.leaveStart);
+        const dateB = this.parseDate(b.leaveStart);
+        return dateA - dateB;
+      });
+
+      // 비고 조합: 이전 이력 + 현재 휴직 구분
       let remarks = '';
+      if (previousRecords.length > 0) {
+        const prevHistory = previousRecords.map((prev, idx) => {
+          const prevPeriod = `${prev.leaveStart} ~ ${prev.leaveEnd}`;
+          return `${idx + 1}차: ${prevPeriod}`;
+        }).join(' ');
+        remarks = prevHistory;
+      }
+
+      // 현재 휴직 구분 추가 (있는 경우)
       if (currentRecord.leaveType) {
-        remarks = currentRecord.leaveType;
+        if (remarks) {
+          remarks = `${currentRecord.leaveType} (${remarks})`;
+        } else {
+          remarks = currentRecord.leaveType;
+        }
       }
 
       const entry = {
