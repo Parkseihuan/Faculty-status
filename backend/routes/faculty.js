@@ -37,32 +37,15 @@ router.get('/data', async (req, res) => {
       : { first: [], second: [], uploadedAt: null };
 
     // 휴직 데이터 추출 (교원현황 데이터에서)
+    // excelParser가 파싱할 때 이미 추출한 휴직 교원 데이터 사용
     const leaveData = {
       leave: [],
       uploadedAt: latestData.uploadInfo?.uploadedAt || latestData.updatedAt
     };
 
-    if (latestData.facultyData && Array.isArray(latestData.facultyData)) {
-      // 전임교원, 비전임교원, 기타 모두에서 휴직 교원 찾기
-      const allFaculty = [
-        ...(latestData.facultyData.filter(f => f.facultyType === 'fulltime') || []),
-        ...(latestData.facultyData.filter(f => f.facultyType === 'parttime') || []),
-        ...(latestData.facultyData.filter(f => f.facultyType === 'other') || [])
-      ];
-
-      allFaculty.forEach(faculty => {
-        const status = String(faculty.employmentStatus || faculty.status || '').toLowerCase();
-
-        // 휴직 교원 찾기
-        if (status.includes('휴직')) {
-          leaveData.leave.push({
-            dept: faculty.subDept || faculty.dept || '미배정',
-            name: faculty.name,
-            period: faculty.period || '', // 휴직 기간이 있다면
-            remarks: faculty.remarks || ''
-          });
-        }
-      });
+    // latestData.researchLeaveData.leave에서 교원현황 파일의 휴직 교원 가져오기
+    if (latestData.researchLeaveData && latestData.researchLeaveData.leave) {
+      leaveData.leave = [...latestData.researchLeaveData.leave];
     }
 
     // 연구년 데이터에서 추출된 휴직 데이터와 병합
