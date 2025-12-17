@@ -3,6 +3,7 @@ const router = express.Router();
 const FacultyData = require('../models/FacultyData');
 const Organization = require('../models/Organization');
 const ResearchLeaveData = require('../models/ResearchLeaveData');
+const AppointmentData = require('../models/AppointmentData');
 
 /**
  * GET /api/faculty/data
@@ -36,29 +37,71 @@ router.get('/data', async (req, res) => {
         }
       : { first: [], second: [], uploadedAt: null };
 
-    // 휴직 데이터 추출 (교원현황 데이터에서)
-    // excelParser가 파싱할 때 이미 추출한 휴직 교원 데이터 사용
-    const leaveData = {
-      leave: [],
-      uploadedAt: latestData.uploadInfo?.uploadedAt || latestData.updatedAt
-    };
+    // 휴직 데이터 병합 (3개 소스: 교원현황, 연구년, 발령사항)
+    // 발령사항 데이터를 우선적으로 사용 (가장 상세한 정보)
+    const leaveDataMap = new Map(); // 이름을 key로 사용하여 중복 제거
 
-    // latestData.researchLeaveData.leave에서 교원현황 파일의 휴직 교원 가져오기
+    let leaveUploadedAt = latestData.uploadInfo?.uploadedAt || latestData.updatedAt;
+
+    // 1. 교원현황 파일의 휴직 데이터 (excelParser가 파싱 시 추출)
     if (latestData.researchLeaveData && latestData.researchLeaveData.leave) {
-      leaveData.leave = [...latestData.researchLeaveData.leave];
+      latestData.researchLeaveData.leave.forEach(item => {
+        leaveDataMap.set(item.name, {
+          ...item,
+          source: 'faculty'
+        });
+      });
+      console.log(`📋 교원현황에서 ${latestData.researchLeaveData.leave.length}명 휴직 교원 추출`);
     }
 
-    // 연구년 데이터에서 추출된 휴직 데이터와 병합
+    // 2. 연구년 파일의 휴직 데이터
     if (researchLeaveDoc && researchLeaveDoc.leave && researchLeaveDoc.leave.length > 0) {
-      // 연구년 파일에서 가져온 휴직 데이터 추가
-      leaveData.leave.push(...researchLeaveDoc.leave);
-      // 연구년 파일 날짜로 업데이트 (더 최신)
-      if (researchLeaveDoc.uploadInfo?.uploadedAt) {
-        leaveData.uploadedAt = researchLeaveDoc.uploadInfo.uploadedAt;
+      researchLeaveDoc.leave.forEach(item => {
+        // 이미 있으면 건너뛰기
+        if (!leaveDataMap.has(item.name)) {
+          leaveDataMap.set(item.name, {
+            ...item,
+            source: 'research'
+          });
+        }
+      });
+      console.log(`📋 연구년 파일에서 ${researchLeaveDoc.leave.length}명 휴직 교원 추출`);
+
+      // 더 최신 날짜 사용
+      if (researchLeaveDoc.uploadInfo?.uploadedAt && researchLeaveDoc.uploadInfo.uploadedAt > leaveUploadedAt) {
+        leaveUploadedAt = researchLeaveDoc.uploadInfo.uploadedAt;
       }
     }
 
-    console.log(`📊 휴직 교원: ${leaveData.leave.length}명 (교원현황 데이터 기준: ${leaveData.uploadedAt})`);
+    // 3. 발령사항 파일의 휴직 데이터 (우선순위 최고)
+    const appointmentDoc = await AppointmentData.getLatest();
+    if (appointmentDoc && appointmentDoc.leave && appointmentDoc.leave.length > 0) {
+      appointmentDoc.leave.forEach(item => {
+        // 발령사항 데이터는 무조건 덮어쓰기 (가장 상세한 정보)
+        leaveDataMap.set(item.name, {
+          ...item,
+          source: 'appointment'
+        });
+      });
+      console.log(`📋 발령사항에서 ${appointmentDoc.leave.length}명 휴직 교원 추출`);
+
+      // 더 최신 날짜 사용
+      if (appointmentDoc.uploadInfo?.uploadedAt && appointmentDoc.uploadInfo.uploadedAt > leaveUploadedAt) {
+        leaveUploadedAt = appointmentDoc.uploadInfo.uploadedAt;
+      }
+    }
+
+    const leaveData = {
+      leave: Array.from(leaveDataMap.values()).map(item => ({
+        dept: item.dept,
+        name: item.name,
+        period: item.period,
+        remarks: item.remarks
+      })),
+      uploadedAt: leaveUploadedAt
+    };
+
+    console.log(`📊 총 휴직 교원: ${leaveData.leave.length}명 (기준일: ${leaveUploadedAt})`);
 
     // 응답 데이터 구성
     const responseData = {

@@ -211,6 +211,13 @@ class API {
   }
 
   /**
+   * 발령사항 파일 업로드
+   */
+  async uploadAppointment(file) {
+    return this.uploadFile('/upload/appointment', file);
+  }
+
+  /**
    * 업로드 기록 조회
    */
   async getUploadHistory() {

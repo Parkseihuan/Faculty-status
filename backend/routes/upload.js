@@ -113,6 +113,14 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
 const researchLeaveParser = require('../utils/researchLeaveParser');
 const ResearchLeaveData = require('../models/ResearchLeaveData');
 
+/**
+ * POST /api/upload/appointment
+ * 교원 발령사항 엑셀 파일 업로드
+ * (관리자 인증 필요)
+ */
+const appointmentParser = require('../utils/appointmentParser');
+const AppointmentData = require('../models/AppointmentData');
+
 router.post('/research-leave', authMiddleware, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
@@ -166,6 +174,71 @@ router.post('/research-leave', authMiddleware, upload.single('file'), async (req
 
   } catch (error) {
     console.error('연구년/휴직 업로드 오류:', error);
+
+    // 에러 발생 시 파일 삭제
+    if (req.file) {
+      try {
+        await fs.unlink(req.file.path);
+      } catch (unlinkError) {
+        console.error('파일 삭제 실패:', unlinkError);
+      }
+    }
+
+    res.status(500).json({
+      error: error.message || '파일 처리 중 오류가 발생했습니다.'
+    });
+  }
+});
+
+/**
+ * POST /api/upload/appointment
+ * 교원 발령사항 엑셀 파일 업로드
+ * (관리자 인증 필요)
+ */
+router.post('/appointment', authMiddleware, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        error: '파일이 업로드되지 않았습니다.'
+      });
+    }
+
+    console.log('발령사항 파일 업로드:', req.file.filename);
+
+    // 엑셀 파일 파싱
+    const parsedData = await appointmentParser.parseExcelFile(req.file.path);
+
+    // MongoDB에 저장
+    const savedData = await AppointmentData.updateData({
+      leave: parsedData.leave,
+      uploadInfo: {
+        filename: req.file.originalname,
+        uploadedAt: new Date(),
+        fileSize: req.file.size,
+        uploadedBy: req.user?.username || 'admin'
+      }
+    });
+
+    console.log('✅ 발령사항 데이터 저장 완료:', savedData._id);
+
+    // 업로드된 파일 삭제
+    try {
+      await fs.unlink(req.file.path);
+    } catch (error) {
+      console.error('파일 삭제 실패:', error);
+    }
+
+    res.json({
+      success: true,
+      message: '발령사항 데이터가 성공적으로 업로드되었습니다.',
+      stats: {
+        leave: parsedData.leave.length
+      },
+      uploadedAt: savedData.uploadInfo.uploadedAt
+    });
+
+  } catch (error) {
+    console.error('발령사항 업로드 오류:', error);
 
     // 에러 발생 시 파일 삭제
     if (req.file) {

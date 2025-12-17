@@ -400,6 +400,127 @@ researchUploadBtn.addEventListener('click', async () => {
   }
 });
 
+// ==================== 발령사항 파일 업로드 ====================
+
+// DOM 요소
+const appointmentUploadArea = document.getElementById('appointmentUploadArea');
+const appointmentFileInput = document.getElementById('appointmentFileInput');
+const appointmentFileInfo = document.getElementById('appointmentFileInfo');
+const appointmentFileName = document.getElementById('appointmentFileName');
+const appointmentFileSize = document.getElementById('appointmentFileSize');
+const appointmentUploadBtn = document.getElementById('appointmentUploadBtn');
+const appointmentCancelBtn = document.getElementById('appointmentCancelBtn');
+const appointmentUploadProgress = document.getElementById('appointmentUploadProgress');
+const appointmentUploadResult = document.getElementById('appointmentUploadResult');
+
+let selectedAppointmentFile = null;
+
+/**
+ * 드래그 앤 드롭 (발령사항)
+ */
+appointmentUploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  appointmentUploadArea.classList.add('dragover');
+});
+
+appointmentUploadArea.addEventListener('dragleave', () => {
+  appointmentUploadArea.classList.remove('dragover');
+});
+
+appointmentUploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  appointmentUploadArea.classList.remove('dragover');
+
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    handleAppointmentFileSelect(files[0]);
+  }
+});
+
+/**
+ * 파일 선택 (발령사항)
+ */
+appointmentFileInput.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) {
+    handleAppointmentFileSelect(e.target.files[0]);
+  }
+});
+
+/**
+ * 파일 선택 처리 (발령사항)
+ */
+function handleAppointmentFileSelect(file) {
+  // 파일 확장자 확인
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx', 'xls'].includes(ext)) {
+    alert('엑셀 파일(.xlsx, .xls)만 업로드 가능합니다.');
+    return;
+  }
+
+  selectedAppointmentFile = file;
+  appointmentFileName.textContent = file.name;
+  appointmentFileSize.textContent = formatFileSize(file.size);
+
+  appointmentUploadArea.classList.add('hidden');
+  appointmentFileInfo.classList.remove('hidden');
+  appointmentUploadResult.classList.add('hidden');
+}
+
+/**
+ * 업로드 취소 (발령사항)
+ */
+appointmentCancelBtn.addEventListener('click', () => {
+  selectedAppointmentFile = null;
+  appointmentFileInput.value = '';
+  appointmentUploadArea.classList.remove('hidden');
+  appointmentFileInfo.classList.add('hidden');
+  appointmentUploadResult.classList.add('hidden');
+});
+
+/**
+ * 파일 업로드 (발령사항)
+ */
+appointmentUploadBtn.addEventListener('click', async () => {
+  if (!selectedAppointmentFile) return;
+
+  try {
+    appointmentUploadProgress.classList.remove('hidden');
+    appointmentUploadResult.classList.add('hidden');
+    appointmentUploadBtn.disabled = true;
+    appointmentCancelBtn.disabled = true;
+
+    const result = await api.uploadAppointment(selectedAppointmentFile);
+
+    appointmentUploadProgress.classList.add('hidden');
+    appointmentUploadResult.classList.remove('hidden');
+    appointmentUploadResult.className = 'result success';
+    appointmentUploadResult.innerHTML = `
+      <h3>✅ 업로드 성공!</h3>
+      <p>${result.message}</p>
+      <p><strong>휴직 교원:</strong> ${result.stats.leave}명</p>
+      <p><strong>업로드 시간:</strong> ${new Date(result.uploadedAt).toLocaleString('ko-KR')}</p>
+    `;
+
+    // 초기화
+    selectedAppointmentFile = null;
+    appointmentFileInput.value = '';
+    appointmentUploadArea.classList.remove('hidden');
+    appointmentFileInfo.classList.add('hidden');
+
+  } catch (error) {
+    appointmentUploadProgress.classList.add('hidden');
+    appointmentUploadResult.classList.remove('hidden');
+    appointmentUploadResult.className = 'result error';
+    appointmentUploadResult.innerHTML = `
+      <h3>❌ 업로드 실패</h3>
+      <p>${error.message}</p>
+    `;
+  } finally {
+    appointmentUploadBtn.disabled = false;
+    appointmentCancelBtn.disabled = false;
+  }
+});
+
 // ===== 조직 순서 설정 =====
 
 /**
