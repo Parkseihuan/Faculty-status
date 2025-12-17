@@ -435,7 +435,7 @@ class ExcelParser {
 
     // 특별 부서 목록
     const specialDepts = [
-      '평가성과분석센터', '산학협력단', '용오름대학', '교육혁신원', '박물관',
+      '평가성과분석센터', '산학협력단', '용오름대학', '교육혁신원', '원격교육지원센터', '박물관',
       '체육지원실', '교수학습지원센터', '스포츠.웰니스연구센터', '특수체육연구소',
       '무도연구소', '혁신사업추진단', '학생생활상담센터', '취창업지원센터', '인권센터'
     ];
@@ -553,6 +553,7 @@ class ExcelParser {
       { name: '산학협력단', subDepts: [] },
       { name: '평가성과분석센터', subDepts: [] },
       { name: '교육혁신원', subDepts: [] },
+      { name: '원격교육지원센터', subDepts: [] },
       { name: '박물관', subDepts: [] },
       { name: '체육지원실', subDepts: [] },
       { name: '교수학습지원센터', subDepts: [] },
@@ -605,7 +606,8 @@ class ExcelParser {
         researchLeaveData.leave.push({
           dept: rowData.dept || '미배정',
           name: rowData.name,
-          period: this.formatPeriod(rowData.firstAppointmentStart, rowData.reappointmentEnd)
+          period: this.formatPeriod(rowData.firstAppointmentStart, rowData.reappointmentEnd),
+          remarks: ''  // 교원현황 파일에는 휴직 구분 정보가 없음
         });
       }
     }
