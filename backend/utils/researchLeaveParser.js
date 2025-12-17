@@ -1,78 +1,64 @@
+const xlsx = require('xlsx');
 const ExcelJS = require('exceljs');
-const XLSX = require('xlsx');
-const path = require('path');
 
 /**
- * 연구년 및 휴직 교원 엑셀 파일 파서
+ * 연구년/휴직 교원 엑셀 파일 파서
  *
- * 예상 엑셀 구조:
- * 구분 | 소속 | 성명 | 기간 | 비고
- * -----|------|------|------|------
- * 연구년 2025학년도 전반기 | 유도경기지도학과 | 전기영 | 2025.03.01 ~ 2026.02.28 | 2019년 연구년
- * 휴직 | 골프학과 | 김순희 | 2025.03.01 ~ 2028.04.08 |
+ * 실제 파일 구조:
+ * 순번 | 대학 | 학과 | 직렬 | 직급 | 성명 | 교번 | 최초임용일 | 재직구분 | 파견시작일 | 파견종료일 | 파견교/파견기관 | 연락처
  */
 class ResearchLeaveParser {
-  /**
-   * 파일 형식 감지
-   */
-  detectFileFormat(filePath) {
-    const ext = path.extname(filePath).toLowerCase();
-    if (ext === '.xls') return 'xls';
-    if (ext === '.xlsx') return 'xlsx';
-    return 'xlsx'; // 기본값
-  }
-
   /**
    * 엑셀 파일 파싱
    */
   async parseExcelFile(filePath) {
     try {
-      const format = this.detectFileFormat(filePath);
-      console.log(`연구년/휴직 파일 형식: ${format}`);
+      console.log('연구년/휴직 파일 업로드:', filePath);
 
-      let data = [];
-      if (format === 'xlsx') {
-        data = await this.parseXLSXFile(filePath);
+      const ext = filePath.split('.').pop().toLowerCase();
+      console.log('연구년/휴직 파일 형식:', ext);
+
+      let data;
+      if (ext === 'xlsx') {
+        data = await this.parseXLSX(filePath);
+      } else if (ext === 'xls') {
+        data = this.parseXLS(filePath);
       } else {
-        data = this.parseXLSFile(filePath);
-      }
-
-      if (data.length === 0) {
-        throw new Error('엑셀 파일이 비어있습니다.');
+        throw new Error('지원하지 않는 파일 형식입니다. (.xlsx 또는 .xls만 가능)');
       }
 
       return this.processData(data);
     } catch (error) {
       console.error('연구년/휴직 파일 파싱 오류:', error);
-      throw new Error(`엑셀 파일 파싱 오류: ${error.message}`);
+      throw error;
     }
   }
 
   /**
-   * XLSX 파일 파싱
+   * XLSX 파일 파싱 (ExcelJS 사용)
    */
-  async parseXLSXFile(filePath) {
+  async parseXLSX(filePath) {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
 
     const worksheet = workbook.worksheets[0];
-    if (!worksheet) {
-      throw new Error('엑셀 파일에 시트가 없습니다.');
-    }
-
     const data = [];
+
     worksheet.eachRow((row, rowNumber) => {
       const rowData = [];
       row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
         let value = cell.value;
+
+        // Date 객체 처리
         if (value instanceof Date) {
           value = this.formatDate(value);
-        } else if (cell.type === ExcelJS.ValueType.Formula && cell.result) {
-          value = cell.result;
-        } else if (value && typeof value === 'object' && value.text) {
-          value = value.text;
         }
-        rowData.push(value || '');
+        // 수식 결과 처리
+        else if (cell.type === ExcelJS.ValueType.Formula && cell.result !== undefined) {
+          value = cell.result;
+        }
+
+        rowData.push(value);
       });
       data.push(rowData);
     });
@@ -81,21 +67,18 @@ class ResearchLeaveParser {
   }
 
   /**
-   * XLS 파일 파싱
+   * XLS 파일 파싱 (xlsx 라이브러리 사용)
    */
-  parseXLSFile(filePath) {
-    const workbook = XLSX.readFile(filePath, {
-      type: 'file',
-      cellDates: true
-    });
-
+  parseXLS(filePath) {
+    const workbook = xlsx.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
-    if (!sheetName) {
-      throw new Error('엑셀 파일에 시트가 없습니다.');
-    }
-
     const worksheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+    const data = xlsx.utils.sheet_to_json(worksheet, {
+      header: 1,
+      raw: false,
+      dateNF: 'yyyy.mm.dd'
+    });
 
     return data.map(row =>
       row.map(cell => (cell instanceof Date ? this.formatDate(cell) : cell))
@@ -127,8 +110,9 @@ class ResearchLeaveParser {
     const colIndex = this.findColumnIndexes(headers);
     console.log('🗂️ 컬럼 인덱스:', colIndex);
 
-    // 데이터 처리
-    let processedCount = 0;
+    // 데이터 처리 - 먼저 모든 데이터를 수집
+    const allRecords = [];
+
     for (let i = headerRowIndex + 1; i < data.length; i++) {
       const row = data[i];
 
@@ -143,50 +127,129 @@ class ResearchLeaveParser {
       const dispatchEnd = this.getCell(row, colIndex.dispatchEnd);
       const dispatchOrg = this.getCell(row, colIndex.dispatchOrg);
 
-      if (processedCount < 5) {
-        console.log(`📝 행 ${i} 데이터:`, {
-          college, dept, name, employmentStatus,
-          dispatchStart, dispatchEnd, dispatchOrg
-        });
-      }
-
       // 성명이 없으면 건너뛰기
       if (!name) continue;
 
+      // 명예교수 제외
+      const statusStr = String(employmentStatus || '').toLowerCase();
+      if (statusStr.includes('명예')) {
+        console.log(`⏭️ 행 ${i}: 명예교수 제외 (${name})`);
+        continue;
+      }
+
+      allRecords.push({
+        rowIndex: i,
+        college,
+        dept,
+        name,
+        employmentStatus,
+        dispatchStart,
+        dispatchEnd,
+        dispatchOrg
+      });
+    }
+
+    console.log(`📊 총 ${allRecords.length}개 레코드 수집됨 (명예교수 제외)`);
+
+    // 교원별로 그룹화 (같은 이름의 교원이 여러 파견 이력을 가질 수 있음)
+    const groupedByName = {};
+    allRecords.forEach(record => {
+      if (!groupedByName[record.name]) {
+        groupedByName[record.name] = [];
+      }
+      groupedByName[record.name].push(record);
+    });
+
+    // 현재 날짜
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 각 교원의 파견 이력 처리
+    let processedCount = 0;
+    Object.keys(groupedByName).forEach(name => {
+      const records = groupedByName[name];
+
+      // 날짜별로 정렬 (최신순)
+      records.sort((a, b) => {
+        const dateA = this.parseDate(a.dispatchStart);
+        const dateB = this.parseDate(b.dispatchStart);
+        return dateB - dateA;
+      });
+
+      // 현재 파견 중인 레코드 찾기
+      const currentRecord = records.find(record => {
+        const startDate = this.parseDate(record.dispatchStart);
+        const endDate = this.parseDate(record.dispatchEnd);
+
+        if (!startDate || !endDate) return false;
+
+        // 현재 날짜가 파견 기간 내에 있는지 확인
+        return startDate <= today && today <= endDate;
+      });
+
+      if (!currentRecord) {
+        // 현재 파견 중이 아니면 건너뛰기
+        return;
+      }
+
       processedCount++;
+
+      if (processedCount <= 5) {
+        console.log(`✅ 현재 파견 중: ${name} (${currentRecord.dispatchStart} ~ ${currentRecord.dispatchEnd})`);
+      }
 
       // 파견 기간 조합
       let period = '';
-      if (dispatchStart && dispatchEnd) {
-        period = `${dispatchStart} ~ ${dispatchEnd}`;
-      } else if (dispatchStart) {
-        period = `${dispatchStart} ~`;
-      } else if (dispatchEnd) {
-        period = `~ ${dispatchEnd}`;
+      if (currentRecord.dispatchStart && currentRecord.dispatchEnd) {
+        period = `${currentRecord.dispatchStart} ~ ${currentRecord.dispatchEnd}`;
+      } else if (currentRecord.dispatchStart) {
+        period = `${currentRecord.dispatchStart} ~`;
+      } else if (currentRecord.dispatchEnd) {
+        period = `~ ${currentRecord.dispatchEnd}`;
       }
 
-      // 소속: 대학 > 학과 우선순위
-      const deptName = dept || college || '미배정';
+      // 소속: 학과 > 대학 우선순위
+      const deptName = currentRecord.dept || currentRecord.college || '미배정';
+
+      // 이전 파견 이력을 비고에 추가
+      const previousRecords = records.filter(r => r !== currentRecord);
+      let remarks = currentRecord.dispatchOrg || '';
+
+      if (previousRecords.length > 0) {
+        const prevHistory = previousRecords.map(prev => {
+          const prevYear = this.extractYear(prev.dispatchStart);
+          return prevYear ? `${prevYear}년` : '이전';
+        }).join(', ');
+
+        if (remarks) {
+          remarks += ` (이전: ${prevHistory})`;
+        } else {
+          remarks = `이전: ${prevHistory}`;
+        }
+
+        if (processedCount <= 5) {
+          console.log(`  📝 이전 이력 추가: ${prevHistory}`);
+        }
+      }
 
       const entry = {
         dept: deptName,
-        name: name,
+        name: currentRecord.name,
         period: period,
-        remarks: dispatchOrg || '' // 파견교/파견기관을 비고로 사용
+        remarks: remarks
       };
 
       // 재직구분으로 연구년/휴직 분류
-      const statusStr = String(employmentStatus || '').toLowerCase();
+      const statusStr = String(currentRecord.employmentStatus || '').toLowerCase();
 
       if (statusStr.includes('연구년') || statusStr.includes('파견')) {
         // 전반기/후반기 구분 (기간으로 판단 - 3~8월 시작이면 전반기, 9~2월 시작이면 후반기)
-        const startDate = dispatchStart ? String(dispatchStart) : '';
-        const month = this.extractMonth(startDate);
+        const month = this.extractMonth(currentRecord.dispatchStart);
 
         if (month >= 3 && month <= 8) {
           result.research.first.push(entry);
           if (processedCount <= 5) console.log(`  ➡️ 연구년 전반기로 분류`);
-        } else if (month >= 9 || month <= 2) {
+        } else if (month >= 9 || (month >= 1 && month <= 2)) {
           result.research.second.push(entry);
           if (processedCount <= 5) console.log(`  ➡️ 연구년 후반기로 분류`);
         } else {
@@ -202,7 +265,7 @@ class ResearchLeaveParser {
         result.research.first.push(entry);
         if (processedCount <= 5) console.log(`  ➡️ 연구년 전반기로 분류 (재직구분 없음)`);
       }
-    }
+    });
 
     console.log('파싱 결과:', {
       researchFirst: result.research.first.length,
@@ -275,9 +338,41 @@ class ResearchLeaveParser {
    * 셀 값 가져오기
    */
   getCell(row, index) {
-    if (index === -1 || index >= row.length) return '';
+    if (index === -1 || !row || index >= row.length) return '';
     const value = row[index];
     return value ? String(value).trim() : '';
+  }
+
+  /**
+   * 날짜 파싱
+   */
+  parseDate(dateStr) {
+    if (!dateStr) return null;
+
+    if (dateStr instanceof Date) {
+      return dateStr;
+    }
+
+    const str = String(dateStr).trim();
+
+    // "YYYY.MM.DD" 또는 "YYYY-MM-DD" 형식
+    const match = str.match(/(\d{4})[.-](\d{1,2})[.-](\d{1,2})/);
+    if (match) {
+      const year = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1; // 0-based
+      const day = parseInt(match[3], 10);
+      return new Date(year, month, day);
+    }
+
+    // "YYYY.MM" 형식
+    const match2 = str.match(/(\d{4})[.-](\d{1,2})/);
+    if (match2) {
+      const year = parseInt(match2[1], 10);
+      const month = parseInt(match2[2], 10) - 1;
+      return new Date(year, month, 1);
+    }
+
+    return null;
   }
 
   /**
@@ -318,6 +413,41 @@ class ResearchLeaveParser {
     }
 
     return 0;
+  }
+
+  /**
+   * 날짜 문자열에서 연도 추출
+   * 예: "2025.03.01" -> 2025
+   */
+  extractYear(dateStr) {
+    if (!dateStr) return null;
+
+    const str = String(dateStr);
+
+    // Date 객체인 경우
+    if (dateStr instanceof Date) {
+      return dateStr.getFullYear();
+    }
+
+    // "2025.03.01" 또는 "2025-03-01" 형식
+    const match = str.match(/(\d{4})[.-]\d{1,2}[.-]\d{1,2}/);
+    if (match) {
+      return parseInt(match[1], 10);
+    }
+
+    // "2025.03" 형식
+    const match2 = str.match(/(\d{4})[.-]\d{1,2}/);
+    if (match2) {
+      return parseInt(match2[1], 10);
+    }
+
+    // "2025" 형식
+    const match3 = str.match(/^(\d{4})$/);
+    if (match3) {
+      return parseInt(match3[1], 10);
+    }
+
+    return null;
   }
 }
 
