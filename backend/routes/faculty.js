@@ -93,10 +93,10 @@ router.get('/data', async (req, res) => {
 
     const leaveData = {
       leave: Array.from(leaveDataMap.values()).map(item => ({
-        dept: item.dept,
-        name: item.name,
-        period: item.period,
-        remarks: item.remarks
+        dept: item.dept || '미배정',
+        name: item.name || '',
+        period: item.period || '',
+        remarks: item.remarks || ''  // undefined 방지
       })),
       uploadedAt: leaveUploadedAt
     };
