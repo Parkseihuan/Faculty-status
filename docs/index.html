@@ -482,8 +482,6 @@
 
     // 연구년 및 휴직 교원 테이블 렌더링
     function renderResearchLeaveTable() {
-      const currentDate = new Date().toLocaleDateString('ko-KR');
-
       if (!globalData) {
         document.getElementById('content').innerHTML = '<div class="error">⚠️ 데이터를 불러올 수 없습니다.</div>';
         return;
@@ -506,10 +504,20 @@
 
       const researchLeaveData = globalData.researchLeaveData;
 
+      // 날짜 포맷팅
+      const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('ko-KR');
+      };
+
+      const researchDate = researchLeaveData.dates?.research ? formatDate(researchLeaveData.dates.research) : '';
+      const leaveDate = researchLeaveData.dates?.leave ? formatDate(researchLeaveData.dates.leave) : '';
+
       let html = `
         <div style="max-width: 1200px; margin: 0 auto;">
           <h2 style="text-align: center; font-size: 24px; font-weight: 600; margin-bottom: 32px; color: #37352f;">
-            연구년 및 휴직 교원 현황 (${currentDate})
+            연구년 및 휴직 교원 현황
           </h2>
 
           <table style="width: 100%;">
@@ -535,7 +543,8 @@
       researchLeaveData.research.first.forEach((item, idx) => {
         html += '<tr>';
         if (idx === 0) {
-          html += `<td rowspan="${totalResearchCount}" class="dept-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; text-align: center; vertical-align: middle;">연구년</td>`;
+          const researchLabel = researchDate ? `연구년<br><span style="font-size: 11px; font-weight: 400; opacity: 0.9;">(${researchDate} 기준)</span>` : '연구년';
+          html += `<td rowspan="${totalResearchCount}" class="dept-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; text-align: center; vertical-align: middle;">${researchLabel}</td>`;
           if (firstCount > 0) {
             html += `<td rowspan="${firstCount}" class="dept-name" style="background-color: #f3f4f6; font-weight: 500; text-align: center; vertical-align: middle;">2025학년도 전반기</td>`;
           }
@@ -566,7 +575,8 @@
         researchLeaveData.leave.forEach((item, idx) => {
           html += '<tr>';
           if (idx === 0) {
-            html += `<td rowspan="${leaveCount}" class="dept-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; font-weight: 600; text-align: center; vertical-align: middle;">휴직</td>`;
+            const leaveLabel = leaveDate ? `휴직<br><span style="font-size: 11px; font-weight: 400; opacity: 0.9;">(${leaveDate} 기준)</span>` : '휴직';
+            html += `<td rowspan="${leaveCount}" class="dept-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; font-weight: 600; text-align: center; vertical-align: middle;">${leaveLabel}</td>`;
             html += `<td rowspan="${leaveCount}" style="background-color: #fef3c7; text-align: center; vertical-align: middle;">-</td>`;
           }
           html += `<td style="text-align: center;">${item.dept}</td>`;
