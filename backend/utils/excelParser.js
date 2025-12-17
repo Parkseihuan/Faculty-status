@@ -442,15 +442,15 @@ class ExcelParser {
 
     const targetPosition = mappedPosition || this.otherPositionMapping[originalPosition] || '기타';
 
-    // 1. 대학이 특별 부서인 경우
-    if (specialDepts.includes(college) && result[college] && result[college][targetPosition]) {
-      result[college][targetPosition].push(nameInfo);
+    // 1. 소속이 특별 부서인 경우 (우선순위 최고)
+    if (specialDepts.includes(dept) && result[dept] && result[dept][targetPosition]) {
+      result[dept][targetPosition].push(nameInfo);
       return true;
     }
 
-    // 2. 소속이 특별 부서인 경우
-    if (specialDepts.includes(dept) && result[dept] && result[dept][targetPosition]) {
-      result[dept][targetPosition].push(nameInfo);
+    // 2. 대학이 특별 부서인 경우
+    if (specialDepts.includes(college) && result[college] && result[college][targetPosition]) {
+      result[college][targetPosition].push(nameInfo);
       return true;
     }
 
@@ -603,12 +603,15 @@ class ExcelParser {
           researchLeaveData.research.first.push(facultyInfo);
         }
       } else if (rowData.status.includes('휴직')) {
-        researchLeaveData.leave.push({
-          dept: rowData.dept || '미배정',
-          name: rowData.name,
-          period: this.formatPeriod(rowData.firstAppointmentStart, rowData.reappointmentEnd),
-          remarks: ''  // 교원현황 파일에는 휴직 구분 정보가 없음
-        });
+        // 이름이 있는 경우만 추가
+        if (rowData.name && rowData.name.trim()) {
+          researchLeaveData.leave.push({
+            dept: rowData.dept || '미배정',
+            name: rowData.name,
+            period: this.formatPeriod(rowData.firstAppointmentStart, rowData.reappointmentEnd),
+            remarks: ''  // 교원현황 파일에는 휴직 구분 정보가 없음
+          });
+        }
       }
     }
 
