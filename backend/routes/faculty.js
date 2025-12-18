@@ -82,9 +82,28 @@ router.get('/data', async (req, res) => {
 
     // 3. 발령사항 파일의 휴직 데이터 (우선순위 최고)
     const appointmentDoc = await AppointmentData.getLatest();
+
+    // 디버깅: appointmentDoc 조회 결과 확인
+    console.log('\n🔍 === AppointmentData.getLatest() 결과 ===');
+    console.log('appointmentDoc 존재:', !!appointmentDoc);
+    if (appointmentDoc) {
+      console.log('appointmentDoc.leave 타입:', typeof appointmentDoc.leave, Array.isArray(appointmentDoc.leave) ? '(배열)' : '');
+      console.log('appointmentDoc.leave 길이:', appointmentDoc.leave?.length);
+      console.log('appointmentDoc.leave 내용:', JSON.stringify(appointmentDoc.leave, null, 2));
+    }
+    console.log('==========================================\n');
+
     if (appointmentDoc && appointmentDoc.leave && appointmentDoc.leave.length > 0) {
       let validCount = 0;
-      appointmentDoc.leave.forEach(item => {
+      appointmentDoc.leave.forEach((item, idx) => {
+        console.log(`\n발령사항 항목 ${idx}:`, {
+          dept: item.dept,
+          name: item.name,
+          period: item.period,
+          remarks: item.remarks,
+          '...item 스프레드 결과': { ...item }
+        });
+
         // 이름이 있는 항목만 추가 (발령사항 데이터는 가장 상세하므로 덮어쓰기)
         if (item.name && item.name.trim()) {
           leaveDataMap.set(item.name, {
