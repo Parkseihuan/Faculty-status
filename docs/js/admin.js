@@ -750,11 +750,16 @@ function addDepartment(section) {
 /**
  * 조직 데이터 저장
  */
-saveOrgBtn.addEventListener('click', async () => {
+saveOrgBtn.addEventListener('click', async (e) => {
+  // 기본 동작 방지
+  e.preventDefault();
+
   if (!currentOrgData.fulltime && !currentOrgData.parttime && !currentOrgData.other) return;
 
   // 스크롤 위치 저장
   const scrollY = window.scrollY || window.pageYOffset;
+
+  console.log('저장 시작 - 현재 스크롤 위치:', scrollY);
 
   try {
     // 현재 활성 탭의 데이터만 저장
@@ -762,7 +767,11 @@ saveOrgBtn.addEventListener('click', async () => {
     const dataToSave = currentOrgData[activeOrgTab];
 
     if (confirm(`현재 선택된 '${getOrgTabName(activeOrgTab)}' 탭의 조직 구조를 저장하시겠습니까?\n\n참고: 현재는 하나의 조직 구조만 저장됩니다. 나중에 각 교원 유형별 구조를 모두 저장할 수 있도록 업데이트될 예정입니다.`)) {
+      console.log('confirm 후 스크롤 위치:', window.scrollY);
+
       const result = await api.updateOrganization(dataToSave);
+      console.log('API 호출 후 스크롤 위치:', window.scrollY);
+
       orgResult.classList.remove('hidden');
       orgResult.className = 'result success';
       orgResult.innerHTML = `
@@ -770,16 +779,23 @@ saveOrgBtn.addEventListener('click', async () => {
         <p>${result.message}</p>
         <p><small>저장된 섹션: ${getOrgTabName(activeOrgTab)}</small></p>
       `;
+      console.log('메시지 표시 후 스크롤 위치:', window.scrollY);
 
-      // 스크롤 위치 복원
-      requestAnimationFrame(() => {
+      // 스크롤 위치 복원 - 여러 방법 시도
+      window.scrollTo(0, scrollY);
+      console.log('즉시 복원 후 스크롤 위치:', window.scrollY);
+
+      setTimeout(() => {
         window.scrollTo(0, scrollY);
-      });
+        console.log('setTimeout 복원 후 스크롤 위치:', window.scrollY);
+      }, 0);
+
+      setTimeout(() => {
+        window.scrollTo(0, scrollY);
+        console.log('100ms 후 복원 스크롤 위치:', window.scrollY);
+      }, 100);
     } else {
-      // 취소한 경우에도 스크롤 위치 복원
-      requestAnimationFrame(() => {
-        window.scrollTo(0, scrollY);
-      });
+      console.log('저장 취소됨');
     }
   } catch (error) {
     showOrgError('저장에 실패했습니다: ' + error.message);
