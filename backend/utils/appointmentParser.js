@@ -167,26 +167,29 @@ class AppointmentParser {
         return dateB - dateA;
       });
 
-      // 현재 휴직 중인 레코드 찾기
+      // 현재 휴직 중이거나 휴직 예정인 레코드 찾기
       const currentRecord = records.find(record => {
         const startDate = this.parseDate(record.leaveStart);
         const endDate = this.parseDate(record.leaveEnd);
 
         if (!startDate || !endDate) return false;
 
-        // 현재 날짜가 휴직 기간 내에 있는지 확인
-        return startDate <= today && today <= endDate;
+        // 현재 날짜가 휴직 기간 내에 있거나, 아직 휴직이 끝나지 않은 경우
+        // (현재 휴직 중 또는 미래 휴직 예정 포함)
+        return today <= endDate;
       });
 
       if (!currentRecord) {
-        // 현재 휴직 중이 아니면 건너뛰기
+        // 휴직이 이미 종료된 경우 건너뛰기
         return;
       }
 
       processedCount++;
 
       if (processedCount <= 5) {
-        console.log(`✅ 현재 휴직 중: ${name} (${currentRecord.leaveStart} ~ ${currentRecord.leaveEnd}, ${currentRecord.leaveType || '구분 없음'})`);
+        const startDate = this.parseDate(currentRecord.leaveStart);
+        const status = startDate > today ? '휴직 예정' : '현재 휴직 중';
+        console.log(`✅ ${status}: ${name} (${currentRecord.leaveStart} ~ ${currentRecord.leaveEnd}, ${currentRecord.leaveType || '구분 없음'})`);
       }
 
       // 휴직 기간 조합
