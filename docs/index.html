@@ -115,11 +115,6 @@
             • <span style="color: #448361; font-weight: bold;">초록색</span>: 연구년 중
           </div>
           <div>
-            <strong>구분 색상 (연구년/휴직 탭)</strong><br/>
-            • <span style="display: inline-block; width: 12px; height: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 2px; margin-right: 4px; vertical-align: middle;"></span> <strong>보라색</strong>: 연구년<br/>
-            • <span style="display: inline-block; width: 12px; height: 12px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 2px; margin-right: 4px; vertical-align: middle;"></span> <strong>분홍색</strong>: 휴직
-          </div>
-          <div>
             <strong>배경색 의미 (임용/정년)</strong><br/>
             • <span class="name-badge retirement-upcoming">연두색</span>: 12개월 이내 정년 도래<br/>
             • <span class="name-badge appointment-urgent">붉은색</span>: 만료 3개월 전 (긴급)<br/>
@@ -525,14 +520,14 @@
             연구년 및 휴직 교원 현황
           </h2>
 
-          <table style="width: 100%;">
+          <table style="width: 100%; table-layout: fixed;">
             <thead>
               <tr>
-                <th style="width: 10%; text-align: center;">구분</th>
-                <th style="width: 16%; text-align: center;">기간 구분</th>
-                <th style="width: 20%; text-align: center;">소속</th>
-                <th style="width: 12%; text-align: center;">성명</th>
-                <th style="width: 22%; text-align: center;">기간</th>
+                <th style="width: 8%; text-align: center;">구분</th>
+                <th style="width: 14%; text-align: center;">기간 구분</th>
+                <th style="width: 22%; text-align: center;">소속</th>
+                <th style="width: 10%; text-align: center;">성명</th>
+                <th style="width: 26%; text-align: center;">기간</th>
                 <th style="width: 20%; text-align: center;">비고</th>
               </tr>
             </thead>
@@ -574,10 +569,11 @@
         html += '</tr>';
       });
 
-      // 휴직
-      const leaveCount = researchLeaveData.leave.length;
+      // 휴직 (이름이 있는 항목만 필터링)
+      const leaveData = researchLeaveData.leave.filter(item => item.name && item.name.trim());
+      const leaveCount = leaveData.length;
       if (leaveCount > 0) {
-        researchLeaveData.leave.forEach((item, idx) => {
+        leaveData.forEach((item, idx) => {
           html += '<tr>';
           if (idx === 0) {
             const leaveLabel = leaveDate ? `휴직<br><span style="font-size: 11px; font-weight: 400; opacity: 0.9;">(${leaveDate} 기준)</span>` : '휴직';
