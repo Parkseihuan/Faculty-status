@@ -753,6 +753,9 @@ function addDepartment(section) {
 saveOrgBtn.addEventListener('click', async () => {
   if (!currentOrgData.fulltime && !currentOrgData.parttime && !currentOrgData.other) return;
 
+  // 스크롤 위치 저장
+  const scrollY = window.scrollY || window.pageYOffset;
+
   try {
     // 현재 활성 탭의 데이터만 저장
     // 향후 백엔드에서 3개 섹션을 모두 지원할 때까지는 활성 탭만 저장
@@ -767,9 +770,23 @@ saveOrgBtn.addEventListener('click', async () => {
         <p>${result.message}</p>
         <p><small>저장된 섹션: ${getOrgTabName(activeOrgTab)}</small></p>
       `;
+
+      // 스크롤 위치 복원
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollY);
+      });
+    } else {
+      // 취소한 경우에도 스크롤 위치 복원
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollY);
+      });
     }
   } catch (error) {
     showOrgError('저장에 실패했습니다: ' + error.message);
+    // 에러 발생 시에도 스크롤 위치 복원
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollY);
+    });
   }
 });
 
