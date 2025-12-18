@@ -84,8 +84,11 @@
       <button class="faculty-tab" onclick="switchTab('other')" id="tab-other">
         기타
       </button>
-      <button class="faculty-tab" onclick="switchTab('research')" id="tab-research">
-        연구년 및 휴직 교원
+      <button class="faculty-tab" onclick="switchTab('researchYear')" id="tab-researchYear">
+        연구년 교원
+      </button>
+      <button class="faculty-tab" onclick="switchTab('leaveYear')" id="tab-leaveYear">
+        휴직 교원
       </button>
       <button class="faculty-tab" onclick="switchTab('genderStats')" id="tab-genderStats">
         전임교원 직급별 성별 인원
@@ -480,23 +483,19 @@
       }
     }
 
-    // 연구년 및 휴직 교원 테이블 렌더링
-    function renderResearchLeaveTable() {
+    // 연구년 교원 테이블 렌더링
+    function renderResearchYearTable() {
       if (!globalData) {
         document.getElementById('content').innerHTML = '<div class="error">⚠️ 데이터를 불러올 수 없습니다.</div>';
         return;
       }
 
       // 데이터가 없거나 비어있는 경우
-      if (!globalData.researchLeaveData ||
-          (!globalData.researchLeaveData.research && !globalData.researchLeaveData.leave)) {
+      if (!globalData.researchLeaveData || !globalData.researchLeaveData.research) {
         document.getElementById('content').innerHTML = `
           <div class="info-message" style="text-align: center; padding: 40px; color: #666;">
             <h3 style="margin-bottom: 16px;">📋 데이터 없음</h3>
-            <p>연구년 및 휴직 교원 데이터를 표시하려면 관리자 페이지에서 새 엑셀 파일을 업로드해주세요.</p>
-            <p style="margin-top: 12px; font-size: 14px; color: #999;">
-              기존 데이터는 이 기능이 추가되기 전에 업로드되어 해당 정보가 포함되지 않았습니다.
-            </p>
+            <p>연구년 교원 데이터를 표시하려면 관리자 페이지에서 새 엑셀 파일을 업로드해주세요.</p>
           </div>
         `;
         return;
@@ -512,23 +511,21 @@
       };
 
       const researchDate = researchLeaveData.dates?.research ? formatDate(researchLeaveData.dates.research) : '';
-      const leaveDate = researchLeaveData.dates?.leave ? formatDate(researchLeaveData.dates.leave) : '';
 
       let html = `
         <div style="max-width: 1200px; margin: 0 auto;">
           <h2 style="text-align: center; font-size: 24px; font-weight: 600; margin-bottom: 32px; color: #37352f;">
-            연구년 및 휴직 교원 현황
+            연구년 교원 현황
           </h2>
 
           <table style="width: 100%; table-layout: fixed;">
             <thead>
               <tr>
-                <th style="width: 8%; text-align: center;">구분</th>
-                <th style="width: 14%; text-align: center;">기간 구분</th>
-                <th style="width: 22%; text-align: center;">소속</th>
-                <th style="width: 10%; text-align: center;">성명</th>
-                <th style="width: 26%; text-align: center;">기간</th>
-                <th style="width: 20%; text-align: center;">비고</th>
+                <th style="width: 20%; text-align: center;">기간 구분</th>
+                <th style="width: 25%; text-align: center;">소속</th>
+                <th style="width: 12%; text-align: center;">성명</th>
+                <th style="width: 28%; text-align: center;">기간</th>
+                <th style="width: 15%; text-align: center;">비고</th>
               </tr>
             </thead>
             <tbody>
@@ -542,12 +539,8 @@
       // 연구년 - 전반기
       researchLeaveData.research.first.forEach((item, idx) => {
         html += '<tr>';
-        if (idx === 0) {
-          const researchLabel = researchDate ? `연구년<br><span style="font-size: 11px; font-weight: 400; opacity: 0.9;">(${researchDate} 기준)</span>` : '연구년';
-          html += `<td rowspan="${totalResearchCount}" class="dept-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; text-align: center; vertical-align: middle;">${researchLabel}</td>`;
-          if (firstCount > 0) {
-            html += `<td rowspan="${firstCount}" class="dept-name" style="background-color: #f3f4f6; font-weight: 500; text-align: center; vertical-align: middle;">2025학년도 전반기</td>`;
-          }
+        if (idx === 0 && firstCount > 0) {
+          html += `<td rowspan="${firstCount}" class="dept-name" style="background-color: #f3f4f6; font-weight: 500; text-align: center; vertical-align: middle;">2025학년도 전반기</td>`;
         }
         html += `<td style="text-align: center;">${item.dept}</td>`;
         html += `<td style="text-align: center; font-weight: 500;">${item.name}</td>`;
@@ -569,44 +562,117 @@
         html += '</tr>';
       });
 
-      // 휴직 (이름이 있는 항목만 필터링)
-      const leaveData = researchLeaveData.leave.filter(item => item.name && item.name.trim());
-      const leaveCount = leaveData.length;
-      if (leaveCount > 0) {
-        leaveData.forEach((item, idx) => {
-          html += '<tr>';
-          if (idx === 0) {
-            const leaveLabel = leaveDate ? `휴직<br><span style="font-size: 11px; font-weight: 400; opacity: 0.9;">(${leaveDate} 기준)</span>` : '휴직';
-            html += `<td rowspan="${leaveCount}" class="dept-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; font-weight: 600; text-align: center; vertical-align: middle;">${leaveLabel}</td>`;
-            html += `<td rowspan="${leaveCount}" style="background-color: #fef3c7; text-align: center; vertical-align: middle;">-</td>`;
-          }
-          html += `<td style="text-align: center;">${item.dept}</td>`;
-          html += `<td style="text-align: center; font-weight: 500;">${item.name}</td>`;
-          html += `<td style="text-align: center; color: #4b5563;">${item.period}</td>`;
-          html += `<td style="text-align: center; color: #6b7280; font-size: 13px;">${item.remarks || '-'}</td>`;
-          html += '</tr>';
-        });
-      }
-
       html += `
             </tbody>
           </table>
 
           <div style="margin-top: 24px; padding: 16px; background-color: #f9fafb; border-radius: 8px; text-align: center;">
-            <div style="display: inline-flex; gap: 32px; align-items: center;">
+            <div style="display: inline-flex; gap: 16px; align-items: center;">
               <div>
                 <span style="display: inline-block; width: 12px; height: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 2px; margin-right: 8px;"></span>
-                <span style="font-size: 14px; color: #6b7280;">연구년: ${totalResearchCount}명</span>
-              </div>
-              <div>
-                <span style="display: inline-block; width: 12px; height: 12px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 2px; margin-right: 8px;"></span>
-                <span style="font-size: 14px; color: #6b7280;">휴직: ${leaveCount}명</span>
+                <span style="font-size: 14px; color: #6b7280;">연구년</span>
               </div>
               <div style="font-weight: 600; font-size: 16px; color: #37352f;">
-                총 ${totalResearchCount + leaveCount}명
+                총 ${totalResearchCount}명
               </div>
             </div>
           </div>
+        </div>
+      `;
+
+      document.getElementById('content').innerHTML = html;
+    }
+
+    // 휴직 교원 테이블 렌더링
+    function renderLeaveYearTable() {
+      if (!globalData) {
+        document.getElementById('content').innerHTML = '<div class="error">⚠️ 데이터를 불러올 수 없습니다.</div>';
+        return;
+      }
+
+      // 데이터가 없거나 비어있는 경우
+      if (!globalData.researchLeaveData || !globalData.researchLeaveData.leave) {
+        document.getElementById('content').innerHTML = `
+          <div class="info-message" style="text-align: center; padding: 40px; color: #666;">
+            <h3 style="margin-bottom: 16px;">📋 데이터 없음</h3>
+            <p>휴직 교원 데이터를 표시하려면 관리자 페이지에서 새 엑셀 파일을 업로드해주세요.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const researchLeaveData = globalData.researchLeaveData;
+
+      // 날짜 포맷팅
+      const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('ko-KR');
+      };
+
+      const leaveDate = researchLeaveData.dates?.leave ? formatDate(researchLeaveData.dates.leave) : '';
+
+      // 휴직 데이터 (빈 항목 제외 - 백엔드에서 이미 필터링되어야 하지만 안전장치)
+      const leaveData = researchLeaveData.leave || [];
+      const leaveCount = leaveData.length;
+
+      console.log('휴직 데이터:', leaveData); // 디버깅용
+
+      let html = `
+        <div style="max-width: 1200px; margin: 0 auto;">
+          <h2 style="text-align: center; font-size: 24px; font-weight: 600; margin-bottom: 32px; color: #37352f;">
+            휴직 교원 현황
+          </h2>
+      `;
+
+      if (leaveCount === 0) {
+        html += `
+          <div class="info-message" style="text-align: center; padding: 40px; color: #666;">
+            <p>현재 휴직 중인 교원이 없습니다.</p>
+          </div>
+        `;
+      } else {
+        html += `
+          <table style="width: 100%; table-layout: fixed;">
+            <thead>
+              <tr>
+                <th style="width: 30%; text-align: center;">소속</th>
+                <th style="width: 15%; text-align: center;">성명</th>
+                <th style="width: 30%; text-align: center;">기간</th>
+                <th style="width: 25%; text-align: center;">비고</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        leaveData.forEach((item) => {
+          html += '<tr>';
+          html += `<td style="text-align: center;">${item.dept || '미배정'}</td>`;
+          html += `<td style="text-align: center; font-weight: 500;">${item.name || ''}</td>`;
+          html += `<td style="text-align: center; color: #4b5563;">${item.period || ''}</td>`;
+          html += `<td style="text-align: center; color: #6b7280; font-size: 13px;">${item.remarks || '-'}</td>`;
+          html += '</tr>';
+        });
+
+        html += `
+            </tbody>
+          </table>
+
+          <div style="margin-top: 24px; padding: 16px; background-color: #f9fafb; border-radius: 8px; text-align: center;">
+            <div style="display: inline-flex; gap: 16px; align-items: center;">
+              <div>
+                <span style="display: inline-block; width: 12px; height: 12px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 2px; margin-right: 8px;"></span>
+                <span style="font-size: 14px; color: #6b7280;">휴직</span>
+              </div>
+              <div style="font-weight: 600; font-size: 16px; color: #37352f;">
+                총 ${leaveCount}명
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      html += `
         </div>
       `;
 
@@ -741,8 +807,11 @@
       if (!globalData) return;
 
       // 새로운 탭 처리
-      if (currentTab === 'research') {
-        renderResearchLeaveTable();
+      if (currentTab === 'researchYear') {
+        renderResearchYearTable();
+        return;
+      } else if (currentTab === 'leaveYear') {
+        renderLeaveYearTable();
         return;
       } else if (currentTab === 'genderStats') {
         renderGenderStatsTable();
