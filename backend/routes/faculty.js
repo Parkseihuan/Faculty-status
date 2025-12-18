@@ -104,6 +104,23 @@ router.get('/data', async (req, res) => {
       }
     }
 
+    // 디버깅: Map 내용 상세 출력
+    console.log(`\n🔍 === leaveDataMap 디버깅 ===`);
+    console.log(`Map 크기: ${leaveDataMap.size}`);
+    console.log(`Map 키들:`, Array.from(leaveDataMap.keys()));
+
+    leaveDataMap.forEach((value, key) => {
+      console.log(`\n키: "${key}"`);
+      console.log(`값:`, {
+        dept: value.dept,
+        name: value.name,
+        period: value.period,
+        remarks: value.remarks,
+        source: value.source
+      });
+    });
+    console.log(`=========================\n`);
+
     const leaveData = {
       leave: Array.from(leaveDataMap.values()).map(item => ({
         dept: item.dept || '미배정',
@@ -115,6 +132,9 @@ router.get('/data', async (req, res) => {
     };
 
     console.log(`📊 총 휴직 교원: ${leaveData.leave.length}명 (기준일: ${leaveUploadedAt})`);
+
+    // 최종 데이터도 출력
+    console.log(`\n📋 최종 휴직 데이터 (클라이언트로 전송):`, JSON.stringify(leaveData.leave, null, 2));
 
     // 응답 데이터 구성
     const responseData = {
