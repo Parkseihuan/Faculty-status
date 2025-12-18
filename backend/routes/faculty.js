@@ -49,8 +49,10 @@ router.get('/data', async (req, res) => {
       latestData.researchLeaveData.leave.forEach(item => {
         // 이름이 있는 항목만 추가
         if (item.name && item.name.trim()) {
+          // Mongoose Document를 plain object로 변환
+          const plainItem = typeof item.toObject === 'function' ? item.toObject() : item;
           leaveDataMap.set(item.name, {
-            ...item,
+            ...plainItem,
             source: 'faculty'
           });
           validCount++;
@@ -65,8 +67,10 @@ router.get('/data', async (req, res) => {
       researchLeaveDoc.leave.forEach(item => {
         // 이름이 있고, 이미 Map에 없는 경우만 추가
         if (item.name && item.name.trim() && !leaveDataMap.has(item.name)) {
+          // Mongoose Document를 plain object로 변환
+          const plainItem = typeof item.toObject === 'function' ? item.toObject() : item;
           leaveDataMap.set(item.name, {
-            ...item,
+            ...plainItem,
             source: 'research'
           });
           validCount++;
@@ -106,8 +110,9 @@ router.get('/data', async (req, res) => {
 
         // 이름이 있는 항목만 추가 (발령사항 데이터는 가장 상세하므로 덮어쓰기)
         if (item.name && item.name.trim()) {
+          // Mongoose Document를 plain object로 변환
           leaveDataMap.set(item.name, {
-            ...item,
+            ...item.toObject(),
             source: 'appointment'
           });
           validCount++;
