@@ -45,27 +45,34 @@ router.get('/data', async (req, res) => {
 
     // 1. 교원현황 파일의 휴직 데이터 (excelParser가 파싱 시 추출)
     if (latestData.researchLeaveData && latestData.researchLeaveData.leave) {
+      let validCount = 0;
       latestData.researchLeaveData.leave.forEach(item => {
-        leaveDataMap.set(item.name, {
-          ...item,
-          source: 'faculty'
-        });
+        // 이름이 있는 항목만 추가
+        if (item.name && item.name.trim()) {
+          leaveDataMap.set(item.name, {
+            ...item,
+            source: 'faculty'
+          });
+          validCount++;
+        }
       });
-      console.log(`📋 교원현황에서 ${latestData.researchLeaveData.leave.length}명 휴직 교원 추출`);
+      console.log(`📋 교원현황에서 ${validCount}명 휴직 교원 추출 (전체 ${latestData.researchLeaveData.leave.length}개 항목)`);
     }
 
     // 2. 연구년 파일의 휴직 데이터
     if (researchLeaveDoc && researchLeaveDoc.leave && researchLeaveDoc.leave.length > 0) {
+      let validCount = 0;
       researchLeaveDoc.leave.forEach(item => {
-        // 이미 있으면 건너뛰기
-        if (!leaveDataMap.has(item.name)) {
+        // 이름이 있고, 이미 Map에 없는 경우만 추가
+        if (item.name && item.name.trim() && !leaveDataMap.has(item.name)) {
           leaveDataMap.set(item.name, {
             ...item,
             source: 'research'
           });
+          validCount++;
         }
       });
-      console.log(`📋 연구년 파일에서 ${researchLeaveDoc.leave.length}명 휴직 교원 추출`);
+      console.log(`📋 연구년 파일에서 ${validCount}명 휴직 교원 추출 (전체 ${researchLeaveDoc.leave.length}개 항목)`);
 
       // 더 최신 날짜 사용
       if (researchLeaveDoc.uploadInfo?.uploadedAt && researchLeaveDoc.uploadInfo.uploadedAt > leaveUploadedAt) {
@@ -76,14 +83,20 @@ router.get('/data', async (req, res) => {
     // 3. 발령사항 파일의 휴직 데이터 (우선순위 최고)
     const appointmentDoc = await AppointmentData.getLatest();
     if (appointmentDoc && appointmentDoc.leave && appointmentDoc.leave.length > 0) {
+      let validCount = 0;
       appointmentDoc.leave.forEach(item => {
-        // 발령사항 데이터는 무조건 덮어쓰기 (가장 상세한 정보)
-        leaveDataMap.set(item.name, {
-          ...item,
-          source: 'appointment'
-        });
+        // 이름이 있는 항목만 추가 (발령사항 데이터는 가장 상세하므로 덮어쓰기)
+        if (item.name && item.name.trim()) {
+          leaveDataMap.set(item.name, {
+            ...item,
+            source: 'appointment'
+          });
+          validCount++;
+        } else {
+          console.warn(`⚠️  발령사항에서 이름 없는 휴직 데이터 발견:`, item);
+        }
       });
-      console.log(`📋 발령사항에서 ${appointmentDoc.leave.length}명 휴직 교원 추출`);
+      console.log(`📋 발령사항에서 ${validCount}명 휴직 교원 추출 (전체 ${appointmentDoc.leave.length}개 항목)`);
 
       // 더 최신 날짜 사용
       if (appointmentDoc.uploadInfo?.uploadedAt && appointmentDoc.uploadInfo.uploadedAt > leaveUploadedAt) {
