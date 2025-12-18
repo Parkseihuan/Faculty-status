@@ -578,6 +578,9 @@ function renderOrgEditor(section, orgData) {
   const container = document.getElementById(`${section}-org`);
   if (!container) return;
 
+  // 스크롤 위치 저장
+  const scrollY = window.scrollY || window.pageYOffset;
+
   // 기존 org-editor가 있으면 제거
   const existingEditor = container.querySelector('.org-editor');
   if (existingEditor) {
@@ -632,6 +635,11 @@ function renderOrgEditor(section, orgData) {
 
   // 이벤트 리스너 등록
   attachOrgEditorEvents(section);
+
+  // 스크롤 위치 복원 (DOM 업데이트 후)
+  requestAnimationFrame(() => {
+    window.scrollTo(0, scrollY);
+  });
 }
 
 /**
