@@ -753,56 +753,66 @@ function addDepartment(section) {
 saveOrgBtn.addEventListener('click', async (e) => {
   // 기본 동작 방지
   e.preventDefault();
+  e.stopPropagation();
 
   if (!currentOrgData.fulltime && !currentOrgData.parttime && !currentOrgData.other) return;
 
   // 스크롤 위치 저장
   const scrollY = window.scrollY || window.pageYOffset;
 
-  console.log('저장 시작 - 현재 스크롤 위치:', scrollY);
+  // 스크롤 복원 함수
+  const restoreScroll = () => {
+    window.scrollTo({
+      top: scrollY,
+      left: 0,
+      behavior: 'instant'
+    });
+  };
 
   try {
     // 현재 활성 탭의 데이터만 저장
-    // 향후 백엔드에서 3개 섹션을 모두 지원할 때까지는 활성 탭만 저장
     const dataToSave = currentOrgData[activeOrgTab];
 
     if (confirm(`현재 선택된 '${getOrgTabName(activeOrgTab)}' 탭의 조직 구조를 저장하시겠습니까?\n\n참고: 현재는 하나의 조직 구조만 저장됩니다. 나중에 각 교원 유형별 구조를 모두 저장할 수 있도록 업데이트될 예정입니다.`)) {
-      console.log('confirm 후 스크롤 위치:', window.scrollY);
+
+      // confirm 창이 닫힌 직후 스크롤 복원
+      restoreScroll();
 
       const result = await api.updateOrganization(dataToSave);
-      console.log('API 호출 후 스크롤 위치:', window.scrollY);
 
-      orgResult.classList.remove('hidden');
-      orgResult.className = 'result success';
+      // API 호출 후 다시 스크롤 복원
+      restoreScroll();
+
+      // 결과 메시지를 먼저 숨긴 상태로 업데이트
+      orgResult.classList.add('hidden');
+      orgResult.className = 'result success hidden';
       orgResult.innerHTML = `
         <h3>✅ 저장 성공!</h3>
         <p>${result.message}</p>
         <p><small>저장된 섹션: ${getOrgTabName(activeOrgTab)}</small></p>
       `;
-      console.log('메시지 표시 후 스크롤 위치:', window.scrollY);
 
-      // 스크롤 위치 복원 - 여러 방법 시도
-      window.scrollTo(0, scrollY);
-      console.log('즉시 복원 후 스크롤 위치:', window.scrollY);
+      // 스크롤 위치 복원 후 메시지 표시
+      restoreScroll();
 
+      // 약간의 지연 후 메시지 표시 (레이아웃 변경 후)
+      requestAnimationFrame(() => {
+        orgResult.classList.remove('hidden');
+        // 메시지 표시 직후 다시 한번 스크롤 복원
+        requestAnimationFrame(() => {
+          restoreScroll();
+        });
+      });
+
+      // 추가 안전장치: 100ms 후에도 한번 더 복원
       setTimeout(() => {
-        window.scrollTo(0, scrollY);
-        console.log('setTimeout 복원 후 스크롤 위치:', window.scrollY);
-      }, 0);
-
-      setTimeout(() => {
-        window.scrollTo(0, scrollY);
-        console.log('100ms 후 복원 스크롤 위치:', window.scrollY);
+        restoreScroll();
       }, 100);
-    } else {
-      console.log('저장 취소됨');
     }
   } catch (error) {
     showOrgError('저장에 실패했습니다: ' + error.message);
     // 에러 발생 시에도 스크롤 위치 복원
-    requestAnimationFrame(() => {
-      window.scrollTo(0, scrollY);
-    });
+    restoreScroll();
   }
 });
 
