@@ -208,6 +208,14 @@ router.post('/appointment', authMiddleware, upload.single('file'), async (req, r
     // 엑셀 파일 파싱
     const parsedData = await appointmentParser.parseExcelFile(req.file.path);
 
+    // 디버깅: 파싱된 데이터 확인
+    console.log('\n🔍 === 파싱된 데이터 (MongoDB 저장 전) ===');
+    console.log('parsedData 구조:', Object.keys(parsedData));
+    console.log('parsedData.leave 타입:', typeof parsedData.leave, Array.isArray(parsedData.leave) ? '(배열)' : '');
+    console.log('parsedData.leave 길이:', parsedData.leave?.length);
+    console.log('parsedData.leave 내용:', JSON.stringify(parsedData.leave, null, 2));
+    console.log('=========================================\n');
+
     // MongoDB에 저장
     const savedData = await AppointmentData.updateData({
       leave: parsedData.leave,
@@ -220,6 +228,12 @@ router.post('/appointment', authMiddleware, upload.single('file'), async (req, r
     });
 
     console.log('✅ 발령사항 데이터 저장 완료:', savedData._id);
+
+    // 디버깅: 저장된 데이터 확인
+    console.log('\n🔍 === MongoDB에 저장된 데이터 ===');
+    console.log('savedData.leave 길이:', savedData.leave?.length);
+    console.log('savedData.leave 내용:', JSON.stringify(savedData.leave, null, 2));
+    console.log('====================================\n');
 
     // 업로드된 파일 삭제
     try {
