@@ -302,13 +302,13 @@ tbody {
 
 /* 휴직 상태 */
 .status-leave {
-  color: #0b6e99;
+  color: #0b6e99 !important;
   font-weight: 500;
 }
 
 /* 연구년 상태 */
 .status-research {
-  color: #448361;
+  color: #448361 !important;
   font-weight: 500;
 }
 
