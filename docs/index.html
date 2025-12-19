@@ -821,19 +821,23 @@
       const { facultyData, deptStructure, fullTimePositions, partTimePositions, otherPositions } = globalData;
       const currentDate = new Date().toLocaleDateString('ko-KR');
 
-      // 현재 탭에 따라 표시할 컬럼 결정
+      // 현재 탭에 따라 표시할 컬럼과 조직 구조 결정
       let positions = [];
       let tabTitle = '';
+      let currentDeptStructure = [];
 
       if (currentTab === 'fullTime') {
         positions = fullTimePositions;
         tabTitle = '전임교원';
+        currentDeptStructure = deptStructure.fulltime || deptStructure; // 폴백
       } else if (currentTab === 'partTime') {
         positions = partTimePositions;
         tabTitle = '비전임교원';
+        currentDeptStructure = deptStructure.parttime || deptStructure; // 폴백
       } else {
         positions = otherPositions;
         tabTitle = '기타';
+        currentDeptStructure = deptStructure.other || deptStructure; // 폴백
       }
 
       let html = `
@@ -883,7 +887,7 @@
         return total;
       };
 
-      deptStructure.forEach(dept => {
+      currentDeptStructure.forEach(dept => {
         if (dept.name === '대학원' || (dept.subDepts && dept.subDepts.length > 0)) {
            let activeDepts = dept.subDepts;
            if (dept.name !== '대학원') {

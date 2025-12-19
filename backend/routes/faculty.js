@@ -23,9 +23,14 @@ router.get('/data', async (req, res) => {
       });
     }
 
-    // Organization 모델에서 최신 조직 순서 조회
+    // Organization 모델에서 최신 조직 순서 조회 (교원 유형별)
     const orgDoc = await Organization.getLatest();
-    const deptStructure = orgDoc && orgDoc.deptStructure ? orgDoc.deptStructure : latestData.deptStructure;
+
+    // 각 교원 유형별 조직 구조 설정 (없으면 기본 구조로 폴백)
+    const defaultStructure = latestData.deptStructure || Organization.getDefault();
+    const deptStructureFulltime = (orgDoc && orgDoc.fulltime) ? orgDoc.fulltime : defaultStructure;
+    const deptStructureParttime = (orgDoc && orgDoc.parttime) ? orgDoc.parttime : defaultStructure;
+    const deptStructureOther = (orgDoc && orgDoc.other) ? orgDoc.other : defaultStructure;
 
     // 연구년 데이터 조회 (별도 모델에서)
     const researchLeaveDoc = await ResearchLeaveData.getLatest();
@@ -163,7 +168,11 @@ router.get('/data', async (req, res) => {
     // 응답 데이터 구성
     const responseData = {
       facultyData: latestData.facultyData,
-      deptStructure: deptStructure, // Organization 모델의 최신 조직 순서 사용
+      deptStructure: {
+        fulltime: deptStructureFulltime,
+        parttime: deptStructureParttime,
+        other: deptStructureOther
+      }, // 교원 유형별 조직 순서
       fullTimePositions: latestData.fullTimePositions,
       partTimePositions: latestData.partTimePositions,
       otherPositions: latestData.otherPositions,
