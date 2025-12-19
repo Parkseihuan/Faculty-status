@@ -529,7 +529,7 @@ tbody {
 @media print {
   @page {
     size: A3 landscape;
-    margin: 5mm;
+    margin: 8mm;
   }
 
   body {
@@ -541,31 +541,82 @@ tbody {
   .container {
     box-shadow: none;
     overflow: visible;
+    border-radius: 0;
   }
 
+  /* 인쇄 시 숨길 요소들 */
   .controls,
-  .footnote {
+  .footnote,
+  .faculty-tabs {
     display: none !important;
   }
 
   .table-container {
     overflow: visible !important;
     padding: 0 !important;
+    max-height: none !important;
   }
 
   table {
     width: 100% !important;
     table-layout: auto !important;
     border: 1px solid #000;
+    page-break-inside: auto;
   }
 
+  /* 제목 행 스타일 */
+  thead tr:first-child th {
+    font-size: 16px !important;
+    font-weight: bold !important;
+    padding: 8px !important;
+    border-bottom: 2px solid #000 !important;
+    background-color: white !important;
+  }
+
+  /* 컬럼 헤더 */
+  thead tr:nth-child(2) th {
+    font-size: 10px !important;
+    font-weight: bold !important;
+    padding: 4px 2px !important;
+    border: 1px solid #000 !important;
+    background-color: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 데이터 셀 */
   th,
   td {
     border: 1px solid #000 !important;
-    font-size: 8px !important;
-    padding: 2px !important;
+    font-size: 9px !important;
+    padding: 3px 4px !important;
+    page-break-inside: avoid;
   }
 
+  /* 부서명 강조 */
+  .dept-header {
+    font-weight: bold !important;
+    background-color: #f5f5f5 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .dept-name {
+    background-color: #fafafa !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 합계 행 강조 */
+  .total-row td {
+    font-weight: bold !important;
+    background-color: #e8e8e8 !important;
+    border-top: 2px solid #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* sticky 제거 */
   thead,
   tbody tr > td:first-child,
   tbody tr > td:nth-child(2) {
@@ -573,17 +624,68 @@ tbody {
     box-shadow: none !important;
   }
 
+  /* 이름 배지 스타일 유지 */
   .name-badge {
-    border: 1px solid #ccc !important;
+    display: inline-block;
+    padding: 1px 4px;
+    margin: 1px;
+    font-size: 9px !important;
+    border-radius: 2px;
   }
 
-  .appointment-urgent,
-  .appointment-warning,
-  .appointment-caution,
-  .retirement-upcoming,
-  .status-leave,
-  .status-research {
+  /* 색상 출력 보장 */
+  .appointment-urgent {
+    background-color: #ffebee !important;
+    color: #d32f2f !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  .appointment-warning {
+    background-color: #fff3e0 !important;
+    color: #f57c00 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .appointment-caution {
+    background-color: #fffde7 !important;
+    color: #f57f17 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .retirement-upcoming {
+    background-color: #e8f5e9 !important;
+    color: #2e7d32 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .status-leave {
+    color: #1976d2 !important;
+    font-weight: bold !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .status-research {
+    color: #388e3c !important;
+    font-weight: bold !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 페이지 나눔 제어 */
+  tr {
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
   }
 }
