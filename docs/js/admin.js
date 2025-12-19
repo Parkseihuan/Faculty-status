@@ -2,6 +2,16 @@
  * 관리자 페이지 메인 스크립트
  */
 
+/**
+ * HTML 이스케이프 함수 (XSS 방지)
+ */
+function escapeHtml(text) {
+  if (text == null) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 // DOM 요소
 const loginModal = document.getElementById('loginModal');
 const mainContent = document.getElementById('mainContent');
@@ -248,9 +258,9 @@ uploadBtn.addEventListener('click', async () => {
     uploadResult.className = 'result success';
     uploadResult.innerHTML = `
       <h3>✅ 업로드 성공!</h3>
-      <p>${result.message}</p>
-      <p><strong>처리된 인원:</strong> ${result.stats.processed}명 / ${result.stats.total}명</p>
-      <p><strong>업로드 시간:</strong> ${new Date(result.uploadedAt).toLocaleString('ko-KR')}</p>
+      <p>${escapeHtml(result.message)}</p>
+      <p><strong>처리된 인원:</strong> ${escapeHtml(result.stats.processed)}명 / ${escapeHtml(result.stats.total)}명</p>
+      <p><strong>업로드 시간:</strong> ${escapeHtml(new Date(result.uploadedAt).toLocaleString('ko-KR'))}</p>
     `;
 
     // 초기화
@@ -268,7 +278,7 @@ uploadBtn.addEventListener('click', async () => {
     uploadResult.className = 'result error';
     uploadResult.innerHTML = `
       <h3>❌ 업로드 실패</h3>
-      <p>${error.message}</p>
+      <p>${escapeHtml(error.message)}</p>
     `;
   } finally {
     uploadBtn.disabled = false;
@@ -372,12 +382,12 @@ researchUploadBtn.addEventListener('click', async () => {
     researchUploadResult.className = 'result success';
     researchUploadResult.innerHTML = `
       <h3>✅ 업로드 성공!</h3>
-      <p>${result.message}</p>
-      <p><strong>연구년 (전반기):</strong> ${result.stats.researchFirst}명</p>
-      <p><strong>연구년 (후반기):</strong> ${result.stats.researchSecond}명</p>
-      <p><strong>휴직:</strong> ${result.stats.leave}명</p>
-      <p><strong>총 인원:</strong> ${result.stats.total}명</p>
-      <p><strong>업로드 시간:</strong> ${new Date(result.uploadedAt).toLocaleString('ko-KR')}</p>
+      <p>${escapeHtml(result.message)}</p>
+      <p><strong>연구년 (전반기):</strong> ${escapeHtml(result.stats.researchFirst)}명</p>
+      <p><strong>연구년 (후반기):</strong> ${escapeHtml(result.stats.researchSecond)}명</p>
+      <p><strong>휴직:</strong> ${escapeHtml(result.stats.leave)}명</p>
+      <p><strong>총 인원:</strong> ${escapeHtml(result.stats.total)}명</p>
+      <p><strong>업로드 시간:</strong> ${escapeHtml(new Date(result.uploadedAt).toLocaleString('ko-KR'))}</p>
     `;
 
     // 초기화
@@ -392,7 +402,7 @@ researchUploadBtn.addEventListener('click', async () => {
     researchUploadResult.className = 'result error';
     researchUploadResult.innerHTML = `
       <h3>❌ 업로드 실패</h3>
-      <p>${error.message}</p>
+      <p>${escapeHtml(error.message)}</p>
     `;
   } finally {
     researchUploadBtn.disabled = false;
@@ -496,9 +506,9 @@ appointmentUploadBtn.addEventListener('click', async () => {
     appointmentUploadResult.className = 'result success';
     appointmentUploadResult.innerHTML = `
       <h3>✅ 업로드 성공!</h3>
-      <p>${result.message}</p>
-      <p><strong>휴직 교원:</strong> ${result.stats.leave}명</p>
-      <p><strong>업로드 시간:</strong> ${new Date(result.uploadedAt).toLocaleString('ko-KR')}</p>
+      <p>${escapeHtml(result.message)}</p>
+      <p><strong>휴직 교원:</strong> ${escapeHtml(result.stats.leave)}명</p>
+      <p><strong>업로드 시간:</strong> ${escapeHtml(new Date(result.uploadedAt).toLocaleString('ko-KR'))}</p>
     `;
 
     // 초기화
@@ -513,7 +523,7 @@ appointmentUploadBtn.addEventListener('click', async () => {
     appointmentUploadResult.className = 'result error';
     appointmentUploadResult.innerHTML = `
       <h3>❌ 업로드 실패</h3>
-      <p>${error.message}</p>
+      <p>${escapeHtml(error.message)}</p>
     `;
   } finally {
     appointmentUploadBtn.disabled = false;
@@ -600,7 +610,7 @@ function renderOrgEditor(section, orgData) {
     deptEl.innerHTML = `
       <div class="org-item-header">
         <input type="checkbox" class="delete-checkbox dept-delete-checkbox" data-index="${index}" data-section="${section}">
-        <input type="text" value="${dept.name}" class="dept-name-input" data-index="${index}" data-section="${section}">
+        <input type="text" value="${escapeHtml(dept.name)}" class="dept-name-input" data-index="${index}" data-section="${section}">
         <div class="org-item-controls">
           <button class="btn btn-sm btn-secondary move-up" data-index="${index}" data-section="${section}">▲</button>
           <button class="btn btn-sm btn-secondary move-down" data-index="${index}" data-section="${section}">▼</button>
@@ -612,7 +622,7 @@ function renderOrgEditor(section, orgData) {
           ${dept.subDepts.map((subDept, subIndex) => `
             <div class="sub-dept-item">
               <input type="checkbox" class="delete-checkbox subdept-delete-checkbox" data-dept-index="${index}" data-sub-index="${subIndex}" data-section="${section}">
-              <input type="text" value="${subDept}" data-dept-index="${index}" data-sub-index="${subIndex}" data-section="${section}">
+              <input type="text" value="${escapeHtml(subDept)}" data-dept-index="${index}" data-sub-index="${subIndex}" data-section="${section}">
             </div>
           `).join('')}
           <button class="btn btn-sm btn-success add-sub-dept" data-dept-index="${index}" data-section="${section}">+ 학과 추가</button>
@@ -824,9 +834,9 @@ saveOrgBtn.addEventListener('click', async (e) => {
       orgResult.className = 'result success';
       orgResult.innerHTML = `
         <h3>✅ 저장 성공!</h3>
-        <p>${result.message}</p>
+        <p>${escapeHtml(result.message)}</p>
         ${hasItemsToDelete ? `<p><small>삭제된 항목: ${checkedDepts.length}개 대학, ${Object.values(checkedSubDepts).flat().length}개 학과</small></p>` : ''}
-        <p><small>저장된 섹션: ${getOrgTabName(activeOrgTab)}</small></p>
+        <p><small>저장된 섹션: ${escapeHtml(getOrgTabName(activeOrgTab))}</small></p>
       `;
     }
   } catch (error) {
@@ -835,7 +845,7 @@ saveOrgBtn.addEventListener('click', async (e) => {
     orgResult.className = 'result error';
     orgResult.innerHTML = `
       <h3>❌ 오류</h3>
-      <p>저장에 실패했습니다: ${error.message}</p>
+      <p>저장에 실패했습니다: ${escapeHtml(error.message)}</p>
     `;
   }
 });
@@ -932,8 +942,8 @@ saveAsDefaultBtn.addEventListener('click', async () => {
       orgResult.className = 'result success';
       orgResult.innerHTML = `
         <h3>✅ 기본값 저장 완료!</h3>
-        <p>${result.message}</p>
-        <p><small>저장된 유형: ${tabName}</small></p>
+        <p>${escapeHtml(result.message)}</p>
+        <p><small>저장된 유형: ${escapeHtml(tabName)}</small></p>
       `;
     }
   } catch (error) {
@@ -949,7 +959,7 @@ function showOrgError(message) {
   orgResult.className = 'result error';
   orgResult.innerHTML = `
     <h3>❌ 오류</h3>
-    <p>${message}</p>
+    <p>${escapeHtml(message)}</p>
   `;
 }
 
@@ -1075,8 +1085,8 @@ if (changePasswordForm) {
       resultElement.className = 'result success';
       resultElement.innerHTML = `
         <h3>✅ 성공</h3>
-        <p>${result.message}</p>
-        <p>새 비밀번호 힌트: <strong>${result.hint}</strong></p>
+        <p>${escapeHtml(result.message)}</p>
+        <p>새 비밀번호 힌트: <strong>${escapeHtml(result.hint)}</strong></p>
       `;
 
       // 폼 초기화
@@ -1092,7 +1102,7 @@ if (changePasswordForm) {
       resultElement.className = 'result error';
       resultElement.innerHTML = `
         <h3>❌ 오류</h3>
-        <p>${error.message || '비밀번호 변경에 실패했습니다.'}</p>
+        <p>${escapeHtml(error.message || '비밀번호 변경에 실패했습니다.')}</p>
       `;
     }
   });
