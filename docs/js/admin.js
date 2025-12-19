@@ -859,20 +859,18 @@ function getOrgTabName(tabKey) {
 }
 
 /**
- * 기본값으로 초기화
+ * 현재 활성화된 탭만 기본값으로 초기화
  */
 resetOrgBtn.addEventListener('click', () => {
-  if (confirm('모든 조직 구조를 기본값으로 초기화하시겠습니까?')) {
-    // 기본 조직 구조로 모든 섹션 초기화
-    const defaultOrg = getDefaultOrgStructure();
-    currentOrgData.fulltime = JSON.parse(JSON.stringify(defaultOrg));
-    currentOrgData.parttime = JSON.parse(JSON.stringify(defaultOrg));
-    currentOrgData.other = JSON.parse(JSON.stringify(defaultOrg));
+  const tabName = getOrgTabName(activeOrgTab);
 
-    // 모든 섹션 다시 렌더링
-    renderOrgEditor('fulltime', currentOrgData.fulltime);
-    renderOrgEditor('parttime', currentOrgData.parttime);
-    renderOrgEditor('other', currentOrgData.other);
+  if (confirm(`'${tabName}' 탭의 조직 구조를 기본값으로 초기화하시겠습니까?`)) {
+    // 기본 조직 구조로 현재 탭만 초기화
+    const defaultOrg = getDefaultOrgStructure();
+    currentOrgData[activeOrgTab] = JSON.parse(JSON.stringify(defaultOrg));
+
+    // 현재 탭만 다시 렌더링
+    renderOrgEditor(activeOrgTab, currentOrgData[activeOrgTab]);
 
     saveOrgBtn.disabled = false;
 
@@ -880,7 +878,7 @@ resetOrgBtn.addEventListener('click', () => {
     orgResult.className = 'result success';
     orgResult.innerHTML = `
       <h3>✅ 초기화 완료</h3>
-      <p>모든 섹션이 기본값으로 초기화되었습니다.</p>
+      <p>'${escapeHtml(tabName)}' 탭이 기본값으로 초기화되었습니다.</p>
     `;
   }
 });
