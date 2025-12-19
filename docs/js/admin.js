@@ -760,28 +760,13 @@ saveOrgBtn.addEventListener('click', async (e) => {
   // 스크롤 위치 저장
   const scrollY = window.scrollY || window.pageYOffset;
 
-  // 스크롤 복원 함수
-  const restoreScroll = () => {
-    window.scrollTo({
-      top: scrollY,
-      left: 0,
-      behavior: 'instant'
-    });
-  };
-
   try {
     // 현재 활성 탭의 데이터만 저장
     const dataToSave = currentOrgData[activeOrgTab];
 
     if (confirm(`현재 선택된 '${getOrgTabName(activeOrgTab)}' 탭의 조직 구조를 저장하시겠습니까?\n\n참고: 현재는 하나의 조직 구조만 저장됩니다. 나중에 각 교원 유형별 구조를 모두 저장할 수 있도록 업데이트될 예정입니다.`)) {
 
-      // confirm 창이 닫힌 직후 스크롤 복원
-      restoreScroll();
-
       const result = await api.updateOrganization(dataToSave);
-
-      // API 호출 후 다시 스크롤 복원
-      restoreScroll();
 
       // 결과 메시지를 먼저 숨긴 상태로 업데이트
       orgResult.classList.add('hidden');
@@ -792,27 +777,40 @@ saveOrgBtn.addEventListener('click', async (e) => {
         <p><small>저장된 섹션: ${getOrgTabName(activeOrgTab)}</small></p>
       `;
 
-      // 스크롤 위치 복원 후 메시지 표시
-      restoreScroll();
+      // 메시지를 보이게 하기 전 현재 높이 측정
+      orgResult.classList.remove('hidden');
+      const resultHeight = orgResult.offsetHeight;
 
-      // 약간의 지연 후 메시지 표시 (레이아웃 변경 후)
-      requestAnimationFrame(() => {
-        orgResult.classList.remove('hidden');
-        // 메시지 표시 직후 다시 한번 스크롤 복원
-        requestAnimationFrame(() => {
-          restoreScroll();
-        });
+      // 결과 메시지가 추가한 높이만큼 스크롤 위치를 조정하여 복원
+      window.scrollTo({
+        top: scrollY + resultHeight,
+        left: 0,
+        behavior: 'instant'
       });
-
-      // 추가 안전장치: 100ms 후에도 한번 더 복원
-      setTimeout(() => {
-        restoreScroll();
-      }, 100);
+    } else {
+      // 취소했을 때도 스크롤 복원
+      window.scrollTo({
+        top: scrollY,
+        left: 0,
+        behavior: 'instant'
+      });
     }
   } catch (error) {
-    showOrgError('저장에 실패했습니다: ' + error.message);
-    // 에러 발생 시에도 스크롤 위치 복원
-    restoreScroll();
+    // 에러 메시지 표시
+    orgResult.classList.remove('hidden');
+    orgResult.className = 'result error';
+    orgResult.innerHTML = `
+      <h3>❌ 오류</h3>
+      <p>저장에 실패했습니다: ${error.message}</p>
+    `;
+
+    // 메시지 높이를 고려한 스크롤 위치 복원
+    const resultHeight = orgResult.offsetHeight;
+    window.scrollTo({
+      top: scrollY + resultHeight,
+      left: 0,
+      behavior: 'instant'
+    });
   }
 });
 
