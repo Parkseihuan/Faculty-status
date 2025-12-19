@@ -599,11 +599,11 @@ function renderOrgEditor(section, orgData) {
 
     deptEl.innerHTML = `
       <div class="org-item-header">
+        <input type="checkbox" class="delete-checkbox dept-delete-checkbox" data-index="${index}" data-section="${section}">
         <input type="text" value="${dept.name}" class="dept-name-input" data-index="${index}" data-section="${section}">
         <div class="org-item-controls">
           <button class="btn btn-sm btn-secondary move-up" data-index="${index}" data-section="${section}">▲</button>
           <button class="btn btn-sm btn-secondary move-down" data-index="${index}" data-section="${section}">▼</button>
-          <button class="btn btn-sm btn-danger delete-dept" data-index="${index}" data-section="${section}">삭제</button>
         </div>
       </div>
       <div class="sub-depts">
@@ -611,8 +611,8 @@ function renderOrgEditor(section, orgData) {
         <div class="sub-dept-list" data-dept-index="${index}">
           ${dept.subDepts.map((subDept, subIndex) => `
             <div class="sub-dept-item">
+              <input type="checkbox" class="delete-checkbox subdept-delete-checkbox" data-dept-index="${index}" data-sub-index="${subIndex}" data-section="${section}">
               <input type="text" value="${subDept}" data-dept-index="${index}" data-sub-index="${subIndex}" data-section="${section}">
-              <button class="btn btn-sm btn-danger delete-sub-dept" data-dept-index="${index}" data-sub-index="${subIndex}" data-section="${section}">삭제</button>
             </div>
           `).join('')}
           <button class="btn btn-sm btn-success add-sub-dept" data-dept-index="${index}" data-section="${section}">+ 학과 추가</button>
@@ -651,6 +651,30 @@ function attachOrgEditorEvents(section) {
 
   const sectionData = currentOrgData[section];
 
+  // 대학 삭제 체크박스
+  container.querySelectorAll('.dept-delete-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', (e) => {
+      const orgItem = e.target.closest('.org-item');
+      if (e.target.checked) {
+        orgItem.classList.add('marked-for-deletion');
+      } else {
+        orgItem.classList.remove('marked-for-deletion');
+      }
+    });
+  });
+
+  // 학과 삭제 체크박스
+  container.querySelectorAll('.subdept-delete-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', (e) => {
+      const subDeptItem = e.target.closest('.sub-dept-item');
+      if (e.target.checked) {
+        subDeptItem.classList.add('marked-for-deletion');
+      } else {
+        subDeptItem.classList.remove('marked-for-deletion');
+      }
+    });
+  });
+
   // 대학명 변경
   container.querySelectorAll('.dept-name-input').forEach(input => {
     input.addEventListener('change', (e) => {
@@ -686,36 +710,13 @@ function attachOrgEditorEvents(section) {
     });
   });
 
-  // 대학 삭제
-  container.querySelectorAll('.delete-dept').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const index = parseInt(e.target.dataset.index);
-      const sec = e.target.dataset.section;
-      if (confirm(`'${currentOrgData[sec][index].name}'을(를) 삭제하시겠습니까?`)) {
-        currentOrgData[sec].splice(index, 1);
-        renderOrgEditor(sec, currentOrgData[sec]);
-      }
-    });
-  });
-
   // 학과명 변경
-  container.querySelectorAll('.sub-dept-item input').forEach(input => {
+  container.querySelectorAll('.sub-dept-item input[type="text"]').forEach(input => {
     input.addEventListener('change', (e) => {
       const deptIndex = parseInt(e.target.dataset.deptIndex);
       const subIndex = parseInt(e.target.dataset.subIndex);
       const sec = e.target.dataset.section;
       currentOrgData[sec][deptIndex].subDepts[subIndex] = e.target.value;
-    });
-  });
-
-  // 학과 삭제
-  container.querySelectorAll('.delete-sub-dept').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const deptIndex = parseInt(e.target.dataset.deptIndex);
-      const subIndex = parseInt(e.target.dataset.subIndex);
-      const sec = e.target.dataset.section;
-      currentOrgData[sec][deptIndex].subDepts.splice(subIndex, 1);
-      renderOrgEditor(sec, currentOrgData[sec]);
     });
   });
 
@@ -757,43 +758,76 @@ saveOrgBtn.addEventListener('click', async (e) => {
 
   if (!currentOrgData.fulltime && !currentOrgData.parttime && !currentOrgData.other) return;
 
-  // 스크롤 위치 저장
-  const scrollY = window.scrollY || window.pageYOffset;
-
   try {
-    // 현재 활성 탭의 데이터만 저장
-    const dataToSave = currentOrgData[activeOrgTab];
+    // 현재 활성 섹션의 컨테이너
+    const container = document.getElementById(`${activeOrgTab}-org`);
 
-    if (confirm(`현재 선택된 '${getOrgTabName(activeOrgTab)}' 탭의 조직 구조를 저장하시겠습니까?\n\n참고: 현재는 하나의 조직 구조만 저장됩니다. 나중에 각 교원 유형별 구조를 모두 저장할 수 있도록 업데이트될 예정입니다.`)) {
+    // 체크된 항목들 수집
+    const checkedDepts = [];
+    const checkedSubDepts = {}; // { deptIndex: [subIndex1, subIndex2, ...] }
 
+    // 체크된 대학 수집
+    container.querySelectorAll('.dept-delete-checkbox:checked').forEach(checkbox => {
+      const index = parseInt(checkbox.dataset.index);
+      checkedDepts.push(index);
+    });
+
+    // 체크된 학과 수집
+    container.querySelectorAll('.subdept-delete-checkbox:checked').forEach(checkbox => {
+      const deptIndex = parseInt(checkbox.dataset.deptIndex);
+      const subIndex = parseInt(checkbox.dataset.subIndex);
+      if (!checkedSubDepts[deptIndex]) {
+        checkedSubDepts[deptIndex] = [];
+      }
+      checkedSubDepts[deptIndex].push(subIndex);
+    });
+
+    // 삭제할 항목이 있는지 확인
+    const hasItemsToDelete = checkedDepts.length > 0 || Object.keys(checkedSubDepts).length > 0;
+
+    let confirmMessage = `현재 선택된 '${getOrgTabName(activeOrgTab)}' 탭의 조직 구조를 저장하시겠습니까?`;
+    if (hasItemsToDelete) {
+      confirmMessage += `\n\n체크된 항목 ${checkedDepts.length}개 대학, ${Object.values(checkedSubDepts).flat().length}개 학과가 삭제됩니다.`;
+    }
+    confirmMessage += `\n\n참고: 현재는 하나의 조직 구조만 저장됩니다. 나중에 각 교원 유형별 구조를 모두 저장할 수 있도록 업데이트될 예정입니다.`;
+
+    if (confirm(confirmMessage)) {
+      // 데이터 복사본 생성
+      let dataToSave = JSON.parse(JSON.stringify(currentOrgData[activeOrgTab]));
+
+      // 1. 먼저 각 대학의 체크된 학과들을 제거 (인덱스가 큰 것부터)
+      Object.keys(checkedSubDepts).forEach(deptIndex => {
+        const subIndexes = checkedSubDepts[deptIndex].sort((a, b) => b - a);
+        subIndexes.forEach(subIndex => {
+          if (dataToSave[deptIndex] && dataToSave[deptIndex].subDepts) {
+            dataToSave[deptIndex].subDepts.splice(subIndex, 1);
+          }
+        });
+      });
+
+      // 2. 그 다음 체크된 대학들을 제거 (인덱스가 큰 것부터)
+      checkedDepts.sort((a, b) => b - a).forEach(index => {
+        dataToSave.splice(index, 1);
+      });
+
+      // 3. currentOrgData 업데이트
+      currentOrgData[activeOrgTab] = dataToSave;
+
+      // 4. API 저장
       const result = await api.updateOrganization(dataToSave);
 
-      // 결과 메시지를 먼저 숨긴 상태로 업데이트
-      orgResult.classList.add('hidden');
-      orgResult.className = 'result success hidden';
+      // 5. 화면 재렌더링 (체크된 항목들이 제거된 상태로)
+      renderOrgEditor(activeOrgTab, currentOrgData[activeOrgTab]);
+
+      // 6. 결과 메시지 표시
+      orgResult.classList.remove('hidden');
+      orgResult.className = 'result success';
       orgResult.innerHTML = `
         <h3>✅ 저장 성공!</h3>
         <p>${result.message}</p>
+        ${hasItemsToDelete ? `<p><small>삭제된 항목: ${checkedDepts.length}개 대학, ${Object.values(checkedSubDepts).flat().length}개 학과</small></p>` : ''}
         <p><small>저장된 섹션: ${getOrgTabName(activeOrgTab)}</small></p>
       `;
-
-      // 메시지를 보이게 하기 전 현재 높이 측정
-      orgResult.classList.remove('hidden');
-      const resultHeight = orgResult.offsetHeight;
-
-      // 결과 메시지가 추가한 높이만큼 스크롤 위치를 조정하여 복원
-      window.scrollTo({
-        top: scrollY + resultHeight,
-        left: 0,
-        behavior: 'instant'
-      });
-    } else {
-      // 취소했을 때도 스크롤 복원
-      window.scrollTo({
-        top: scrollY,
-        left: 0,
-        behavior: 'instant'
-      });
     }
   } catch (error) {
     // 에러 메시지 표시
@@ -803,14 +837,6 @@ saveOrgBtn.addEventListener('click', async (e) => {
       <h3>❌ 오류</h3>
       <p>저장에 실패했습니다: ${error.message}</p>
     `;
-
-    // 메시지 높이를 고려한 스크롤 위치 복원
-    const resultHeight = orgResult.offsetHeight;
-    window.scrollTo({
-      top: scrollY + resultHeight,
-      left: 0,
-      behavior: 'instant'
-    });
   }
 });
 

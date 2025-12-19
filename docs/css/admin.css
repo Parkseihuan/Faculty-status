@@ -636,7 +636,65 @@ footer {
 }
 
 /* ========================================
-   17. 반응형 디자인
+   17. 삭제 체크박스 스타일
+   ======================================== */
+.delete-checkbox {
+  margin-right: 8px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: #d44c47;
+}
+
+/* 삭제 표시된 항목 스타일 */
+.marked-for-deletion {
+  opacity: 0.5;
+  background-color: rgba(212, 76, 71, 0.05);
+  transition: all 0.2s ease;
+}
+
+.marked-for-deletion .org-item-header input[type="text"],
+.marked-for-deletion input[type="text"] {
+  text-decoration: line-through;
+  color: rgba(55, 53, 47, 0.45);
+}
+
+.marked-for-deletion .dept-name-input {
+  text-decoration: line-through;
+  color: rgba(55, 53, 47, 0.45);
+}
+
+/* 대학 헤더에서 체크박스 배치 조정 */
+.org-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.org-item-header .dept-name-input {
+  flex: 1;
+  margin-right: 12px;
+}
+
+.org-item-header .delete-checkbox {
+  margin-right: 0;
+}
+
+/* 학과 아이템에서 체크박스 배치 조정 */
+.sub-dept-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sub-dept-item input[type="text"] {
+  flex: 1;
+}
+
+/* ========================================
+   18. 반응형 디자인
    ======================================== */
 @media (max-width: 768px) {
   header .container {
