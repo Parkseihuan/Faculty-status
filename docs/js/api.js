@@ -234,10 +234,12 @@ class API {
   }
 
   /**
-   * 조직 구조 업데이트
+   * 조직 구조 업데이트 (특정 교원 유형)
+   * @param {string} type - 'fulltime', 'parttime', 'other' 중 하나
+   * @param {Array} deptStructure - 조직 구조 데이터
    */
-  async updateOrganization(deptStructure) {
-    return this.put('/organization', { deptStructure });
+  async updateOrganization(type, deptStructure) {
+    return this.put(`/organization/${type}`, { deptStructure });
   }
 
   /**

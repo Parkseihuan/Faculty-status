@@ -2,22 +2,36 @@ const mongoose = require('mongoose');
 
 /**
  * 조직 순서 스키마
- * 대학 및 학과의 표시 순서를 저장
+ * 교원 유형별(전임/비전임/기타) 조직 구조를 저장
  * 항상 최신 데이터 하나만 유지 (singleton pattern)
  */
+const deptStructureType = [{
+  name: {
+    type: String,
+    required: true
+  },
+  subDepts: {
+    type: [String],
+    default: []
+  }
+}];
+
 const organizationSchema = new mongoose.Schema({
-  // 조직 구조 (대학 및 학과 순서)
-  deptStructure: {
-    type: [{
-      name: {
-        type: String,
-        required: true
-      },
-      subDepts: {
-        type: [String],
-        default: []
-      }
-    }],
+  // 전임교원 조직 구조
+  fulltime: {
+    type: deptStructureType,
+    required: true
+  },
+
+  // 비전임교원 조직 구조
+  parttime: {
+    type: deptStructureType,
+    required: true
+  },
+
+  // 기타 조직 구조
+  other: {
+    type: deptStructureType,
     required: true
   },
 
@@ -44,19 +58,58 @@ organizationSchema.index({ updatedAt: -1 });
  * 최신 조직 구조 조회
  */
 organizationSchema.statics.getLatest = async function() {
-  return await this.findOne().sort({ updatedAt: -1 });
+  const org = await this.findOne().sort({ updatedAt: -1 });
+  if (!org) {
+    // 데이터가 없으면 기본값 반환
+    const defaultStructure = this.getDefault();
+    return {
+      fulltime: defaultStructure,
+      parttime: defaultStructure,
+      other: defaultStructure
+    };
+  }
+  return org;
 };
 
 /**
- * 조직 구조 업데이트 또는 생성 (항상 하나만 유지)
+ * 특정 교원 유형의 조직 구조 업데이트
  */
-organizationSchema.statics.updateStructure = async function(deptStructure, updatedBy = 'admin') {
+organizationSchema.statics.updateType = async function(type, structure, updatedBy = 'admin') {
+  let org = await this.findOne().sort({ updatedAt: -1 });
+
+  if (!org) {
+    // 기존 데이터가 없으면 새로 생성
+    const defaultStructure = this.getDefault();
+    org = await this.create({
+      fulltime: type === 'fulltime' ? structure : defaultStructure,
+      parttime: type === 'parttime' ? structure : defaultStructure,
+      other: type === 'other' ? structure : defaultStructure,
+      updatedBy,
+      updatedAt: new Date()
+    });
+  } else {
+    // 기존 데이터 업데이트
+    org[type] = structure;
+    org.updatedBy = updatedBy;
+    org.updatedAt = new Date();
+    await org.save();
+  }
+
+  return org;
+};
+
+/**
+ * 전체 조직 구조 업데이트 (모든 유형)
+ */
+organizationSchema.statics.updateAll = async function(fulltime, parttime, other, updatedBy = 'admin') {
   // 기존 데이터 모두 삭제
   await this.deleteMany({});
 
   // 새 데이터 생성
   return await this.create({
-    deptStructure,
+    fulltime,
+    parttime,
+    other,
     updatedBy,
     updatedAt: new Date()
   });

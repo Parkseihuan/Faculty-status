@@ -39,7 +39,7 @@ body {
 header {
   background-color: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -49,11 +49,11 @@ header .container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
+  padding: 10px 24px;
 }
 
 header h1 {
-  font-size: 20px;
+  font-size: 17px;
   color: #37352f;
   font-weight: 600;
 }
@@ -167,7 +167,7 @@ header h1 {
 .tabs {
   display: flex;
   gap: 4px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   border-bottom: 1px solid rgba(55, 53, 47, 0.09);
   padding-bottom: 0;
 }

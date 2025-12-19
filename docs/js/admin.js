@@ -38,8 +38,6 @@ const uploadResult = document.getElementById('uploadResult');
 const loadOrgBtn = document.getElementById('loadOrgBtn');
 const saveOrgBtn = document.getElementById('saveOrgBtn');
 const resetOrgBtn = document.getElementById('resetOrgBtn');
-const loadDefaultsBtn = document.getElementById('loadDefaultsBtn');
-const saveAsDefaultBtn = document.getElementById('saveAsDefaultBtn');
 const orgResult = document.getElementById('orgResult');
 
 // 조직 탭 버튼들
@@ -560,10 +558,10 @@ loadOrgBtn.addEventListener('click', async () => {
     const result = await api.getOrganization();
     const orgData = result.data;
 
-    // 3개 탭 모두에 동일한 데이터로 초기화
-    currentOrgData.fulltime = JSON.parse(JSON.stringify(orgData));
-    currentOrgData.parttime = JSON.parse(JSON.stringify(orgData));
-    currentOrgData.other = JSON.parse(JSON.stringify(orgData));
+    // 각 교원 유형별 데이터 저장 (서버에서 fulltime, parttime, other로 분리되어 옴)
+    currentOrgData.fulltime = JSON.parse(JSON.stringify(orgData.fulltime));
+    currentOrgData.parttime = JSON.parse(JSON.stringify(orgData.parttime));
+    currentOrgData.other = JSON.parse(JSON.stringify(orgData.other));
 
     // 모든 섹션 렌더링
     renderOrgEditor('fulltime', currentOrgData.fulltime);
@@ -574,7 +572,6 @@ loadOrgBtn.addEventListener('click', async () => {
     document.getElementById('orgTabs').classList.remove('hidden');
 
     saveOrgBtn.disabled = false;
-    saveAsDefaultBtn.disabled = false;
     orgResult.classList.add('hidden');
   } catch (error) {
     showOrgError('조직 데이터를 불러오는데 실패했습니다: ' + error.message);
@@ -617,7 +614,7 @@ function renderOrgEditor(section, orgData) {
         </div>
       </div>
       <div class="sub-depts">
-        <strong>하위 학과:</strong>
+        <strong>하위 조직:</strong>
         <div class="sub-dept-list" data-dept-index="${index}">
           ${dept.subDepts.map((subDept, subIndex) => `
             <div class="sub-dept-item">
@@ -625,7 +622,7 @@ function renderOrgEditor(section, orgData) {
               <input type="text" value="${escapeHtml(subDept)}" data-dept-index="${index}" data-sub-index="${subIndex}" data-section="${section}">
             </div>
           `).join('')}
-          <button class="btn btn-sm btn-success add-sub-dept" data-dept-index="${index}" data-section="${section}">+ 학과 추가</button>
+          <button class="btn btn-sm btn-success add-sub-dept" data-dept-index="${index}" data-section="${section}">+ 조직 추가</button>
         </div>
       </div>
     `;
@@ -673,7 +670,7 @@ function attachOrgEditorEvents(section) {
     });
   });
 
-  // 학과 삭제 체크박스
+  // 하위 조직 삭제 체크박스
   container.querySelectorAll('.subdept-delete-checkbox').forEach(checkbox => {
     checkbox.addEventListener('change', (e) => {
       const subDeptItem = e.target.closest('.sub-dept-item');
@@ -720,7 +717,7 @@ function attachOrgEditorEvents(section) {
     });
   });
 
-  // 학과명 변경
+  // 하위 조직명 변경
   container.querySelectorAll('.sub-dept-item input[type="text"]').forEach(input => {
     input.addEventListener('change', (e) => {
       const deptIndex = parseInt(e.target.dataset.deptIndex);
@@ -730,12 +727,12 @@ function attachOrgEditorEvents(section) {
     });
   });
 
-  // 학과 추가
+  // 하위 조직 추가
   container.querySelectorAll('.add-sub-dept').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const deptIndex = parseInt(e.target.dataset.deptIndex);
       const sec = e.target.dataset.section;
-      const newSubDeptName = prompt('학과명을 입력하세요:');
+      const newSubDeptName = prompt('하위 조직명을 입력하세요:');
       if (newSubDeptName && newSubDeptName.trim()) {
         currentOrgData[sec][deptIndex].subDepts.push(newSubDeptName.trim());
         renderOrgEditor(sec, currentOrgData[sec]);
@@ -797,15 +794,14 @@ saveOrgBtn.addEventListener('click', async (e) => {
 
     let confirmMessage = `현재 선택된 '${getOrgTabName(activeOrgTab)}' 탭의 조직 구조를 저장하시겠습니까?`;
     if (hasItemsToDelete) {
-      confirmMessage += `\n\n체크된 항목 ${checkedDepts.length}개 대학, ${Object.values(checkedSubDepts).flat().length}개 학과가 삭제됩니다.`;
+      confirmMessage += `\n\n체크된 항목 ${checkedDepts.length}개 조직, ${Object.values(checkedSubDepts).flat().length}개 하위 조직이 삭제됩니다.`;
     }
-    confirmMessage += `\n\n참고: 현재는 하나의 조직 구조만 저장됩니다. 나중에 각 교원 유형별 구조를 모두 저장할 수 있도록 업데이트될 예정입니다.`;
 
     if (confirm(confirmMessage)) {
       // 데이터 복사본 생성
       let dataToSave = JSON.parse(JSON.stringify(currentOrgData[activeOrgTab]));
 
-      // 1. 먼저 각 대학의 체크된 학과들을 제거 (인덱스가 큰 것부터)
+      // 1. 먼저 각 조직의 체크된 하위 조직들을 제거 (인덱스가 큰 것부터)
       Object.keys(checkedSubDepts).forEach(deptIndex => {
         const subIndexes = checkedSubDepts[deptIndex].sort((a, b) => b - a);
         subIndexes.forEach(subIndex => {
@@ -815,7 +811,7 @@ saveOrgBtn.addEventListener('click', async (e) => {
         });
       });
 
-      // 2. 그 다음 체크된 대학들을 제거 (인덱스가 큰 것부터)
+      // 2. 그 다음 체크된 조직들을 제거 (인덱스가 큰 것부터)
       checkedDepts.sort((a, b) => b - a).forEach(index => {
         dataToSave.splice(index, 1);
       });
@@ -823,8 +819,8 @@ saveOrgBtn.addEventListener('click', async (e) => {
       // 3. currentOrgData 업데이트
       currentOrgData[activeOrgTab] = dataToSave;
 
-      // 4. API 저장
-      const result = await api.updateOrganization(dataToSave);
+      // 4. API 저장 (교원 유형별로 저장)
+      const result = await api.updateOrganization(activeOrgTab, dataToSave);
 
       // 5. 화면 재렌더링 (체크된 항목들이 제거된 상태로)
       renderOrgEditor(activeOrgTab, currentOrgData[activeOrgTab]);
@@ -835,7 +831,7 @@ saveOrgBtn.addEventListener('click', async (e) => {
       orgResult.innerHTML = `
         <h3>✅ 저장 성공!</h3>
         <p>${escapeHtml(result.message)}</p>
-        ${hasItemsToDelete ? `<p><small>삭제된 항목: ${checkedDepts.length}개 대학, ${Object.values(checkedSubDepts).flat().length}개 학과</small></p>` : ''}
+        ${hasItemsToDelete ? `<p><small>삭제된 항목: ${checkedDepts.length}개 조직, ${Object.values(checkedSubDepts).flat().length}개 하위 조직</small></p>` : ''}
         <p><small>저장된 섹션: ${escapeHtml(getOrgTabName(activeOrgTab))}</small></p>
       `;
     }
@@ -879,7 +875,6 @@ resetOrgBtn.addEventListener('click', () => {
     renderOrgEditor('other', currentOrgData.other);
 
     saveOrgBtn.disabled = false;
-    saveAsDefaultBtn.disabled = false;
 
     orgResult.classList.remove('hidden');
     orgResult.className = 'result success';
@@ -890,66 +885,6 @@ resetOrgBtn.addEventListener('click', () => {
   }
 });
 
-/**
- * 저장된 기본값 불러오기
- */
-loadDefaultsBtn.addEventListener('click', async () => {
-  try {
-    const result = await api.getOrganizationDefaults();
-    const defaults = result.data;
-
-    // 각 탭에 저장된 기본값 적용
-    currentOrgData.fulltime = JSON.parse(JSON.stringify(defaults.fulltime));
-    currentOrgData.parttime = JSON.parse(JSON.stringify(defaults.parttime));
-    currentOrgData.other = JSON.parse(JSON.stringify(defaults.other));
-
-    // 모든 섹션 렌더링
-    renderOrgEditor('fulltime', currentOrgData.fulltime);
-    renderOrgEditor('parttime', currentOrgData.parttime);
-    renderOrgEditor('other', currentOrgData.other);
-
-    // 조직 탭 표시
-    document.getElementById('orgTabs').classList.remove('hidden');
-
-    saveOrgBtn.disabled = false;
-    saveAsDefaultBtn.disabled = false;
-
-    orgResult.classList.remove('hidden');
-    orgResult.className = 'result success';
-    orgResult.innerHTML = `
-      <h3>✅ 기본값 불러오기 완료</h3>
-      <p>저장된 기본값이 각 탭에 적용되었습니다.</p>
-      ${result.isSystemDefault ? '<p><small>⚠️ 아직 저장된 사용자 기본값이 없어 시스템 기본값을 사용합니다.</small></p>' : ''}
-    `;
-  } catch (error) {
-    showOrgError('기본값을 불러오는데 실패했습니다: ' + error.message);
-  }
-});
-
-/**
- * 현재 순서를 기본값으로 저장
- */
-saveAsDefaultBtn.addEventListener('click', async () => {
-  if (!currentOrgData[activeOrgTab]) return;
-
-  try {
-    const tabName = getOrgTabName(activeOrgTab);
-
-    if (confirm(`현재 선택된 '${tabName}' 탭의 조직 순서를 이 유형의 기본값으로 저장하시겠습니까?\n\n이 기본값은 나중에 '기본값 불러오기' 버튼으로 불러올 수 있습니다.`)) {
-      const result = await api.updateOrganizationDefault(activeOrgTab, currentOrgData[activeOrgTab]);
-
-      orgResult.classList.remove('hidden');
-      orgResult.className = 'result success';
-      orgResult.innerHTML = `
-        <h3>✅ 기본값 저장 완료!</h3>
-        <p>${escapeHtml(result.message)}</p>
-        <p><small>저장된 유형: ${escapeHtml(tabName)}</small></p>
-      `;
-    }
-  } catch (error) {
-    showOrgError('기본값 저장에 실패했습니다: ' + error.message);
-  }
-});
 
 /**
  * 조직 에러 표시

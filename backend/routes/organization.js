@@ -22,7 +22,7 @@ const noCacheMiddleware = (req, res, next) => {
 
 /**
  * GET /api/organization
- * 조직 순서 조회
+ * 전체 조직 순서 조회 (전임/비전임/기타)
  * (인증 불필요 - 일반 사용자도 조회 가능)
  */
 router.get('/', noCacheMiddleware, async (req, res) => {
@@ -30,12 +30,13 @@ router.get('/', noCacheMiddleware, async (req, res) => {
     // MongoDB에서 최신 조직 구조 조회
     const orgDoc = await Organization.getLatest();
 
-    // 데이터가 없으면 기본값 반환
-    const deptStructure = orgDoc ? orgDoc.deptStructure : Organization.getDefault();
-
     res.json({
       success: true,
-      data: deptStructure
+      data: {
+        fulltime: orgDoc.fulltime,
+        parttime: orgDoc.parttime,
+        other: orgDoc.other
+      }
     });
   } catch (error) {
     console.error('Organization retrieval error:', error);
@@ -47,13 +48,22 @@ router.get('/', noCacheMiddleware, async (req, res) => {
 });
 
 /**
- * PUT /api/organization
- * 조직 순서 설정
+ * PUT /api/organization/:type
+ * 특정 교원 유형의 조직 순서 설정
  * (관리자 인증 필요)
+ * :type = fulltime | parttime | other
  */
-router.put('/', authMiddleware, async (req, res) => {
+router.put('/:type', authMiddleware, async (req, res) => {
   try {
+    const { type } = req.params;
     const { deptStructure } = req.body;
+
+    if (!['fulltime', 'parttime', 'other'].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        error: '유효하지 않은 타입입니다. fulltime, parttime, other 중 하나여야 합니다.'
+      });
+    }
 
     if (!deptStructure || !Array.isArray(deptStructure)) {
       return res.status(400).json({
@@ -69,13 +79,19 @@ router.put('/', authMiddleware, async (req, res) => {
       });
     }
 
-    // MongoDB에 조직 데이터 저장 (기존 데이터 삭제 후 새로 생성)
-    const updatedOrg = await Organization.updateStructure(deptStructure, req.user?.username || 'admin');
+    // MongoDB에 조직 데이터 저장
+    const updatedOrg = await Organization.updateType(type, deptStructure, req.user?.username || 'admin');
+
+    const typeNames = {
+      fulltime: '전임교원',
+      parttime: '비전임교원',
+      other: '기타'
+    };
 
     res.json({
       success: true,
-      message: '조직 순서가 성공적으로 업데이트되었습니다.',
-      data: updatedOrg.deptStructure
+      message: `${typeNames[type]} 조직 순서가 성공적으로 업데이트되었습니다.`,
+      data: updatedOrg[type]
     });
 
   } catch (error) {
