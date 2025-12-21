@@ -193,6 +193,9 @@
           <div>
             <div class="spinner"></div>
             <p>데이터를 불러오는 중...</p>
+            <p style="font-size: 12px; color: rgba(55, 53, 47, 0.45); margin-top: 8px;">
+              ⏳ 서버가 절전 모드인 경우 30초~1분 정도 소요될 수 있습니다
+            </p>
           </div>
         </div>
       `;
@@ -205,7 +208,7 @@
           handleError(response.error || '데이터를 불러올 수 없습니다.');
         }
       } catch (error) {
-        handleError('서버 연결 오류: ' + error.message);
+        handleError('서버 연결 오류: ' + error.message + '<br><small>페이지를 새로고침해주세요.</small>');
       }
     }
 

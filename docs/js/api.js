@@ -27,7 +27,7 @@ class API {
   }
 
   /**
-   * HTTP 요청
+   * HTTP 요청 (재시도 로직 포함 - Render.com 무료 플랜 대응)
    */
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
@@ -47,18 +47,31 @@ class API {
       headers
     };
 
-    try {
-      const response = await fetch(url, config);
-      const data = await response.json();
+    // 재시도 설정 (Render.com 무료 플랜의 cold start 대응)
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2초
 
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP Error: ${response.status}`);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await fetch(url, config);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || `HTTP Error: ${response.status}`);
+        }
+
+        return data;
+      } catch (error) {
+        // 마지막 시도가 아니고, 네트워크 에러인 경우 재시도
+        if (attempt < maxRetries && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
+          console.log(`🔄 서버 연결 재시도 중... (${attempt}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+          continue;
+        }
+
+        console.error('API Request Error:', error);
+        throw error;
       }
-
-      return data;
-    } catch (error) {
-      console.error('API Request Error:', error);
-      throw error;
     }
   }
 
