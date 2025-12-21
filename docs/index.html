@@ -68,8 +68,16 @@
         <a href="admin.html" class="btn">🔐 관리자</a>
       </div>
       <div class="controls-right">
+        <select id="paperSize" class="btn" style="cursor: pointer;">
+          <option value="A3">A3</option>
+          <option value="A4">A4</option>
+        </select>
+        <select id="paperOrientation" class="btn" style="cursor: pointer;">
+          <option value="portrait">세로</option>
+          <option value="landscape">가로</option>
+        </select>
         <button class="btn" onclick="loadData()">🔄 새로고침</button>
-        <button class="btn btn-primary" onclick="window.print()">🖨️ 인쇄</button>
+        <button class="btn btn-primary" onclick="printWithSettings()">🖨️ 인쇄</button>
       </div>
     </div>
 
@@ -181,8 +189,54 @@
       }
     }
 
-    // 페이지 로드 시 데이터 불러오기
+    // 인쇄 설정 적용 함수
+    function printWithSettings() {
+      const paperSize = document.getElementById('paperSize').value;
+      const orientation = document.getElementById('paperOrientation').value;
+
+      // 설정을 localStorage에 저장
+      localStorage.setItem('printPaperSize', paperSize);
+      localStorage.setItem('printOrientation', orientation);
+
+      // 동적으로 인쇄 스타일 추가
+      const styleId = 'dynamic-print-style';
+      let styleElement = document.getElementById(styleId);
+
+      if (styleElement) {
+        styleElement.remove();
+      }
+
+      styleElement = document.createElement('style');
+      styleElement.id = styleId;
+      styleElement.textContent = `
+        @media print {
+          @page {
+            size: ${paperSize} ${orientation};
+            margin: 6mm 5mm;
+          }
+        }
+      `;
+
+      document.head.appendChild(styleElement);
+
+      // 인쇄 실행
+      window.print();
+
+      // 인쇄 다이얼로그가 닫힌 후 스타일 제거 (선택사항, 남겨둬도 무방)
+      // setTimeout(() => {
+      //   styleElement.remove();
+      // }, 1000);
+    }
+
+    // 페이지 로드 시 데이터 불러오기 및 저장된 인쇄 설정 복원
     window.onload = function() {
+      // 저장된 인쇄 설정 불러오기
+      const savedPaperSize = localStorage.getItem('printPaperSize') || 'A3';
+      const savedOrientation = localStorage.getItem('printOrientation') || 'portrait';
+
+      document.getElementById('paperSize').value = savedPaperSize;
+      document.getElementById('paperOrientation').value = savedOrientation;
+
       loadData();
     };
 
