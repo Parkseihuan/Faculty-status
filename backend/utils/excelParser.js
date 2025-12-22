@@ -470,6 +470,15 @@ class ExcelParser {
         return true;
       }
     }
+    // 3-3. dept에 대학원 이름이 포함된 경우 (예: dept="스포츠과학대학원 체육과학과")
+    for (const gradSchool of graduateSchools) {
+      if (dept && dept.includes(gradSchool)) {
+        if (result['대학원'][gradSchool] && result['대학원'][gradSchool][targetPosition]) {
+          result['대학원'][gradSchool][targetPosition].push(nameInfo);
+          return true;
+        }
+      }
+    }
 
     // 4. 일반 대학의 학과 처리
     if (result[college] && dept && result[college][dept] && result[college][dept][targetPosition]) {
