@@ -57,6 +57,26 @@ const facultyDataSchema = new mongoose.Schema({
     processed: Number
   },
 
+  // 파싱 경고 정보
+  parseWarnings: {
+    unmappedPositions: {
+      type: Array,
+      default: []
+    },
+    unknownDepartments: {
+      type: Array,
+      default: []
+    },
+    skippedLecturers: {
+      type: Number,
+      default: 0
+    },
+    placedInOther: {
+      type: Array,
+      default: []
+    }
+  },
+
   // 업로드 정보
   uploadInfo: {
     filename: String,

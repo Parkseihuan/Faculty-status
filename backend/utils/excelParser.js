@@ -215,6 +215,14 @@ class ExcelParser {
     // 결과 객체 초기화
     const result = this.initializeResultStructure(deptStructure);
 
+    // 파싱 경고 수집 객체 초기화
+    const parseWarnings = {
+      unmappedPositions: {},     // 매핑되지 않은 직급: {직급명: 인원수}
+      unknownDepartments: {},    // 알 수 없는 소속: {소속명: 인원수}
+      skippedLecturers: 0,       // 제외된 시간강사 수
+      placedInOther: []          // 기타로 배치된 항목: [{name, position, dept}]
+    };
+
     // 데이터 처리
     let processedCount = 0;
     let activeCount = 0;
@@ -239,6 +247,7 @@ class ExcelParser {
 
       // 시간강사 제외 (본 부서 관리 대상 아님)
       if (rowData.serialType === '시간강사') {
+        parseWarnings.skippedLecturers++;
         continue;
       }
 
@@ -255,7 +264,7 @@ class ExcelParser {
 
       if (isActive && rowData.name) {
         activeCount++;
-        const processed = this.processEmployee(rowData, result, deptStructure);
+        const processed = this.processEmployee(rowData, result, deptStructure, parseWarnings);
         if (processed) processedCount++;
       }
     }
@@ -268,6 +277,18 @@ class ExcelParser {
     // 전임교원 성별 통계 계산
     const genderStats = this.calculateGenderStats(result);
 
+    // 경고 정리 (Set을 배열로 변환 등)
+    const warnings = {
+      unmappedPositions: Object.entries(parseWarnings.unmappedPositions)
+        .map(([position, count]) => ({ position, count }))
+        .sort((a, b) => b.count - a.count),
+      unknownDepartments: Object.entries(parseWarnings.unknownDepartments)
+        .map(([department, count]) => ({ department, count }))
+        .sort((a, b) => b.count - a.count),
+      skippedLecturers: parseWarnings.skippedLecturers,
+      placedInOther: parseWarnings.placedInOther.slice(0, 50) // 최대 50개만
+    };
+
     return {
       facultyData: result,
       deptStructure: deptStructure,
@@ -276,6 +297,7 @@ class ExcelParser {
       otherPositions: this.otherPositions,
       researchLeaveData: researchLeaveData,
       genderStats: genderStats,
+      parseWarnings: warnings,
       stats: {
         total: activeCount,
         processed: processedCount
@@ -389,8 +411,14 @@ class ExcelParser {
   /**
    * 직원 데이터 처리
    */
-  processEmployee(rowData, result, deptStructure) {
+  processEmployee(rowData, result, deptStructure, parseWarnings) {
     const mappedPosition = this.positionMapping[rowData.position];
+
+    // 매핑되지 않은 직급 체크
+    if (!mappedPosition && !this.otherPositionMapping[rowData.position]) {
+      const pos = rowData.position || '(직급 없음)';
+      parseWarnings.unmappedPositions[pos] = (parseWarnings.unmappedPositions[pos] || 0) + 1;
+    }
 
     // 이름 정보 객체 생성
     const nameInfo = {
@@ -411,7 +439,7 @@ class ExcelParser {
     };
 
     // 교원 배치
-    return this.placeEmployee(nameInfo, mappedPosition, rowData, result, deptStructure);
+    return this.placeEmployee(nameInfo, mappedPosition, rowData, result, deptStructure, parseWarnings);
   }
 
   /**
@@ -436,7 +464,7 @@ class ExcelParser {
   /**
    * 직원을 적절한 부서에 배치
    */
-  placeEmployee(nameInfo, mappedPosition, rowData, result, deptStructure) {
+  placeEmployee(nameInfo, mappedPosition, rowData, result, deptStructure, parseWarnings) {
     const { college, dept, serialType, position: originalPosition } = rowData;
 
     // 특별 부서 목록
@@ -496,6 +524,19 @@ class ExcelParser {
     if (result['기타'] && result['기타'][targetPosition]) {
       nameInfo.displayName = `${nameInfo.name}(${originalPosition || serialType}, ${dept || college})`;
       result['기타'][targetPosition].push(nameInfo);
+
+      // 기타로 배치된 항목 경고에 추가
+      parseWarnings.placedInOther.push({
+        name: nameInfo.name,
+        position: originalPosition || targetPosition,
+        college: college || '(대학 없음)',
+        dept: dept || '(소속 없음)'
+      });
+
+      // 알 수 없는 소속 체크
+      const deptKey = dept || college || '(소속 정보 없음)';
+      parseWarnings.unknownDepartments[deptKey] = (parseWarnings.unknownDepartments[deptKey] || 0) + 1;
+
       return true;
     }
 
