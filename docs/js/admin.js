@@ -270,6 +270,11 @@ uploadBtn.addEventListener('click', async () => {
     // 업로드 기록 새로고침
     loadUploadHistory();
 
+    // 파싱 경고 표시
+    if (result.parseWarnings) {
+      displayParseWarnings(result.parseWarnings);
+    }
+
   } catch (error) {
     uploadProgress.classList.add('hidden');
     uploadResult.classList.remove('hidden');
@@ -1053,6 +1058,148 @@ tabBtns.forEach(btn => {
     }
   });
 });
+
+/**
+ * 파싱 경고 표시 함수
+ */
+function displayParseWarnings(warnings) {
+  const warningsContent = document.getElementById('warnings-content');
+
+  if (!warnings) {
+    warningsContent.innerHTML = '<p class="info-text">파싱 경고 정보가 없습니다.</p>';
+    return;
+  }
+
+  const {
+    unmappedPositions = [],
+    unknownDepartments = [],
+    skippedLecturers = 0,
+    placedInOther = []
+  } = warnings;
+
+  const hasWarnings = unmappedPositions.length > 0 ||
+                      unknownDepartments.length > 0 ||
+                      placedInOther.length > 0;
+
+  let html = '';
+
+  // 요약 정보
+  html += '<div style="margin-bottom: 24px; padding: 16px; background-color: #f9fafb; border-radius: 8px;">';
+  html += '<h3 style="margin-bottom: 12px;">📊 요약</h3>';
+  html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">';
+
+  html += '<div>';
+  html += '<strong>매핑되지 않은 직급:</strong> ';
+  html += `<span style="color: ${unmappedPositions.length > 0 ? '#d44c47' : '#448361'};">${unmappedPositions.length}개</span>`;
+  html += '</div>';
+
+  html += '<div>';
+  html += '<strong>알 수 없는 소속:</strong> ';
+  html += `<span style="color: ${unknownDepartments.length > 0 ? '#d44c47' : '#448361'};">${unknownDepartments.length}개</span>`;
+  html += '</div>';
+
+  html += '<div>';
+  html += '<strong>제외된 시간강사:</strong> ';
+  html += `<span style="color: #0b6e99;">${skippedLecturers}명</span>`;
+  html += '</div>';
+
+  html += '<div>';
+  html += '<strong>기타로 배치된 인원:</strong> ';
+  html += `<span style="color: ${placedInOther.length > 0 ? '#d9730d' : '#448361'};">${placedInOther.length}명</span>`;
+  html += '</div>';
+
+  html += '</div>';
+  html += '</div>';
+
+  if (!hasWarnings && skippedLecturers === 0) {
+    html += '<div style="padding: 24px; text-align: center; color: #448361;">';
+    html += '<p style="font-size: 16px; margin-bottom: 8px;">✅ 모든 데이터가 정상적으로 파싱되었습니다.</p>';
+    html += '<p style="font-size: 14px; color: rgba(55, 53, 47, 0.65);">특별한 경고 사항이 없습니다.</p>';
+    html += '</div>';
+    warningsContent.innerHTML = html;
+    return;
+  }
+
+  // 매핑되지 않은 직급
+  if (unmappedPositions.length > 0) {
+    html += '<div class="card" style="margin-top: 16px;">';
+    html += '<h3 style="color: #d44c47;">⚠️ 매핑되지 않은 직급</h3>';
+    html += '<p class="info-text">다음 직급들은 매핑 테이블에 정의되지 않았습니다. PARSING_GUIDE.md를 참고하여 매핑을 추가하세요.</p>';
+    html += '<table class="org-table" style="margin-top: 12px;">';
+    html += '<thead><tr><th>직급명</th><th>인원수</th></tr></thead><tbody>';
+
+    unmappedPositions.forEach(item => {
+      html += `<tr><td>${escapeHtml(item.position)}</td><td>${item.count}명</td></tr>`;
+    });
+
+    html += '</tbody></table>';
+    html += '</div>';
+  }
+
+  // 알 수 없는 소속
+  if (unknownDepartments.length > 0) {
+    html += '<div class="card" style="margin-top: 16px;">';
+    html += '<h3 style="color: #d44c47;">⚠️ 알 수 없는 소속</h3>';
+    html += '<p class="info-text">다음 소속들은 조직 구조에 매칭되지 않아 "기타"로 분류되었습니다.</p>';
+    html += '<table class="org-table" style="margin-top: 12px;">';
+    html += '<thead><tr><th>소속명</th><th>인원수</th></tr></thead><tbody>';
+
+    unknownDepartments.forEach(item => {
+      html += `<tr><td>${escapeHtml(item.department)}</td><td>${item.count}명</td></tr>`;
+    });
+
+    html += '</tbody></table>';
+    html += '</div>';
+  }
+
+  // 기타로 배치된 인원
+  if (placedInOther.length > 0) {
+    html += '<div class="card" style="margin-top: 16px;">';
+    html += '<h3 style="color: #d9730d;">ℹ️ 기타로 배치된 교원</h3>';
+    html += '<p class="info-text">다음 교원들은 조직 배치 로직에 따라 "기타" 카테고리에 배치되었습니다.</p>';
+    html += '<table class="org-table" style="margin-top: 12px;">';
+    html += '<thead><tr><th>이름</th><th>직급</th><th>대학</th><th>소속</th></tr></thead><tbody>';
+
+    placedInOther.slice(0, 50).forEach(item => {
+      html += `<tr>`;
+      html += `<td>${escapeHtml(item.name)}</td>`;
+      html += `<td>${escapeHtml(item.position)}</td>`;
+      html += `<td>${escapeHtml(item.college)}</td>`;
+      html += `<td>${escapeHtml(item.dept)}</td>`;
+      html += `</tr>`;
+    });
+
+    if (placedInOther.length > 50) {
+      html += `<tr><td colspan="4" style="text-align: center; color: rgba(55, 53, 47, 0.65);">... 외 ${placedInOther.length - 50}명</td></tr>`;
+    }
+
+    html += '</tbody></table>';
+    html += '</div>';
+  }
+
+  // 시간강사 정보
+  if (skippedLecturers > 0) {
+    html += '<div class="card" style="margin-top: 16px;">';
+    html += '<h3 style="color: #0b6e99;">ℹ️ 제외된 시간강사</h3>';
+    html += `<p class="info-text">총 <strong>${skippedLecturers}명</strong>의 시간강사가 파싱 과정에서 제외되었습니다.</p>`;
+    html += '<p class="info-text" style="margin-top: 8px; font-size: 13px; color: rgba(55, 53, 47, 0.65);">';
+    html += '💡 시간강사는 본 부서 관리 대상이 아니므로 의도적으로 제외됩니다. PARSING_GUIDE.md의 "필터링 규칙" 섹션을 참고하세요.';
+    html += '</p>';
+    html += '</div>';
+  }
+
+  // 도움말
+  html += '<div style="margin-top: 24px; padding: 16px; background-color: #f0f9ff; border-radius: 8px; border-left: 4px solid #0b6e99;">';
+  html += '<h4 style="margin-bottom: 8px; color: #0b6e99;">📖 도움말</h4>';
+  html += '<ul style="margin: 0; padding-left: 20px; color: rgba(55, 53, 47, 0.8);">';
+  html += '<li><strong>PARSING_GUIDE.md</strong> 파일을 참고하여 매핑 테이블과 조직 구조를 업데이트할 수 있습니다.</li>';
+  html += '<li>매핑되지 않은 직급은 <code>backend/utils/excelParser.js</code>의 매핑 테이블에 추가하세요.</li>';
+  html += '<li>새로운 조직은 조직 순서 설정 탭에서 순서를 지정할 수 있습니다.</li>';
+  html += '</ul>';
+  html += '</div>';
+
+  warningsContent.innerHTML = html;
+}
 
 // 초기화
 init();

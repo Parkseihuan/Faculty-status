@@ -42,6 +42,7 @@
       <div class="tabs">
         <button class="tab-btn active" data-tab="upload">📤 엑셀 업로드</button>
         <button class="tab-btn" data-tab="organization">🏛️ 조직 순서 설정</button>
+        <button class="tab-btn" data-tab="warnings">⚠️ 파싱 경고</button>
         <button class="tab-btn" data-tab="history">📜 업로드 기록</button>
         <button class="tab-btn" data-tab="settings">⚙️ 설정</button>
       </div>
@@ -174,6 +175,18 @@
             <!-- 기타 조직 -->
             <div id="other-org" class="org-editor-section">
               <p class="info-text">조직 설정을 불러오려면 위의 버튼을 클릭하세요.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 파싱 경고 탭 -->
+        <div id="warnings-tab" class="tab-pane">
+          <div class="card">
+            <h2>파싱 경고</h2>
+            <p class="info-text">엑셀 파일 파싱 중 발견된 이슈들을 확인할 수 있습니다.</p>
+
+            <div id="warnings-content">
+              <p class="info-text">엑셀 파일을 업로드하면 파싱 경고 정보가 여기에 표시됩니다.</p>
             </div>
           </div>
         </div>
