@@ -123,7 +123,8 @@
             <strong>텍스트 스타일 (전임/비전임/기타 탭)</strong><br/>
             • <b>진한 글씨</b>: 연봉제 전임교원<br/>
             • <span style="color: #0b6e99; font-weight: bold;">파란색</span>: 휴직 중<br/>
-            • <span style="color: #448361; font-weight: bold;">초록색</span>: 연구년 중
+            • <span style="color: #448361; font-weight: bold;">초록색</span>: 연구년 중<br/>
+            • <span style="background-color: rgba(140, 46, 184, 0.12); color: #7c3aed; font-weight: bold; padding: 2px 6px; border-radius: 4px;">보라색</span>: 혁신사업 교원
           </div>
           <div>
             <strong>배경색 의미 (임용/정년)</strong><br/>
@@ -377,6 +378,11 @@
                 if (item.status === '휴직') nameClasses.push('status-leave');
                 else if (item.status === '연구') nameClasses.push('status-research');
 
+                // 혁신사업 교원 체크
+                if (item.position && item.position.includes('혁신사업')) {
+                  nameClasses.push('innovation-project');
+                }
+
                 nameClasses.push(getAppointmentClass(item));
 
                 let months = null;
@@ -401,6 +407,11 @@
             nameStr += `(${item.status})`;
             if (item.status === '휴직') classes.push('status-leave');
             else if (item.status === '연구') classes.push('status-research');
+          }
+
+          // 혁신사업 교원 체크
+          if (item.position && item.position.includes('혁신사업')) {
+            classes.push('innovation-project');
           }
 
           classes.push(getAppointmentClass(item));

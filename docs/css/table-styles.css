@@ -313,6 +313,13 @@ tbody {
   font-weight: 500;
 }
 
+/* 혁신사업 교원 */
+.innovation-project {
+  background-color: rgba(140, 46, 184, 0.12) !important;
+  color: #7c3aed !important;
+  font-weight: 500;
+}
+
 /* 임용 종료일 기반 배경색 - Notion 컬러 팔레트 */
 .appointment-urgent {
   background-color: rgba(235, 87, 87, 0.15);
@@ -700,6 +707,14 @@ tbody {
 
   .status-research {
     color: #388e3c !important;
+    font-weight: bold !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .innovation-project {
+    background-color: #ede9fe !important;
+    color: #7c3aed !important;
     font-weight: bold !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
