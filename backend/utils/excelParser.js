@@ -236,6 +236,11 @@ class ExcelParser {
         });
       }
 
+      // 시간강사 제외 (본 부서 관리 대상 아님)
+      if (rowData.serialType === '시간강사') {
+        continue;
+      }
+
       // 재직 상태 체크
       const isActive = rowData.status && (
         rowData.status.includes('재직') ||
