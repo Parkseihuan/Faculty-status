@@ -1274,78 +1274,6 @@ function displayParseWarnings(warnings) {
 let currentAssistantData = null;
 
 /**
- * 조교 데이터 업로드
- */
-async function uploadAssistantData() {
-  const fileInput = document.getElementById('assistantFileInput');
-  const file = fileInput.files[0];
-
-  if (!file) {
-    alert('파일을 선택해주세요.');
-    return;
-  }
-
-  const resultDiv = document.getElementById('assistantUploadResult');
-  resultDiv.className = 'result';
-  resultDiv.classList.remove('hidden');
-  resultDiv.innerHTML = '<p>파일을 업로드하는 중...</p>';
-
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch('/api/assistant/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: formData
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || result.message || '업로드 실패');
-    }
-
-    // 성공 메시지
-    resultDiv.className = 'result success';
-    let html = '<h3>✅ 업로드 성공</h3>';
-    html += `<p>조교 데이터가 성공적으로 업로드되었습니다.</p>`;
-    html += `<ul style="margin-top: 12px; padding-left: 20px;">`;
-    html += `<li>전체 레코드: ${result.data.totalRecords}개</li>`;
-    html += `<li>재직 조교: ${result.data.uniqueActive}명</li>`;
-    html += `<li>최초임용: ${result.data.firstAppointments}명</li>`;
-    html += `</ul>`;
-
-    if (result.data.byCollege) {
-      html += `<h4 style="margin-top: 16px;">대학별 재직 인원</h4>`;
-      html += `<ul style="padding-left: 20px;">`;
-      Object.entries(result.data.byCollege).forEach(([college, count]) => {
-        html += `<li>${college}: ${count}명</li>`;
-      });
-      html += `</ul>`;
-    }
-
-    resultDiv.innerHTML = html;
-
-    // 파일 입력 초기화
-    fileInput.value = '';
-
-    // 조교 데이터 다시 로드
-    await loadAssistantData();
-
-  } catch (error) {
-    console.error('조교 데이터 업로드 오류:', error);
-    resultDiv.className = 'result error';
-    resultDiv.innerHTML = `
-      <h3>❌ 업로드 실패</h3>
-      <p>${error.message}</p>
-    `;
-  }
-}
-
-/**
  * 조교 데이터 로드
  */
 async function loadAssistantData() {
@@ -1499,38 +1427,6 @@ async function saveAssistantAllocations() {
  * 조교 관리 이벤트 리스너 등록
  */
 function initAssistantManagement() {
-  // 업로드 영역 클릭
-  const uploadArea = document.getElementById('assistantUploadArea');
-  const fileInput = document.getElementById('assistantFileInput');
-
-  if (uploadArea && fileInput) {
-    uploadArea.addEventListener('click', () => fileInput.click());
-
-    // 파일 선택 시 자동 업로드
-    fileInput.addEventListener('change', uploadAssistantData);
-
-    // 드래그 앤 드롭
-    uploadArea.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      uploadArea.classList.add('dragover');
-    });
-
-    uploadArea.addEventListener('dragleave', () => {
-      uploadArea.classList.remove('dragover');
-    });
-
-    uploadArea.addEventListener('drop', (e) => {
-      e.preventDefault();
-      uploadArea.classList.remove('dragover');
-
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        fileInput.files = files;
-        uploadAssistantData();
-      }
-    });
-  }
-
   // 저장 버튼
   const saveBtn = document.getElementById('saveAssistantAllocations');
   if (saveBtn) {

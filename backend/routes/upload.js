@@ -120,6 +120,8 @@ const ResearchLeaveData = require('../models/ResearchLeaveData');
  */
 const appointmentParser = require('../utils/appointmentParser');
 const AppointmentData = require('../models/AppointmentData');
+const AssistantParser = require('../utils/assistantParser');
+const AssistantData = require('../models/AssistantData');
 
 router.post('/research-leave', authMiddleware, upload.single('file'), async (req, res) => {
   try {
@@ -205,20 +207,19 @@ router.post('/appointment', authMiddleware, upload.single('file'), async (req, r
 
     console.log('발령사항 파일 업로드:', req.file.filename);
 
-    // 엑셀 파일 파싱
-    const parsedData = await appointmentParser.parseExcelFile(req.file.path);
+    // 엑셀 파일 파싱 (휴직 데이터)
+    const appointmentParsedData = await appointmentParser.parseExcelFile(req.file.path);
 
-    // 디버깅: 파싱된 데이터 확인
-    console.log('\n🔍 === 파싱된 데이터 (MongoDB 저장 전) ===');
-    console.log('parsedData 구조:', Object.keys(parsedData));
-    console.log('parsedData.leave 타입:', typeof parsedData.leave, Array.isArray(parsedData.leave) ? '(배열)' : '');
-    console.log('parsedData.leave 길이:', parsedData.leave?.length);
-    console.log('parsedData.leave 내용:', JSON.stringify(parsedData.leave, null, 2));
-    console.log('=========================================\n');
+    // 조교 데이터 파싱 (같은 파일에서)
+    const assistantParser = new AssistantParser();
+    const assistantParsedData = await assistantParser.parseFromFile(req.file.path);
 
-    // MongoDB에 저장
-    const savedData = await AppointmentData.updateData({
-      leave: parsedData.leave,
+    console.log('✅ 발령사항 파싱 완료 - 휴직:', appointmentParsedData.leave.length, '명');
+    console.log('✅ 조교 데이터 파싱 완료 - 재직:', assistantParsedData.assistants.length, '명');
+
+    // MongoDB에 저장 (발령사항)
+    const savedAppointmentData = await AppointmentData.updateData({
+      leave: appointmentParsedData.leave,
       uploadInfo: {
         filename: req.file.originalname,
         uploadedAt: new Date(),
@@ -227,13 +228,31 @@ router.post('/appointment', authMiddleware, upload.single('file'), async (req, r
       }
     });
 
-    console.log('✅ 발령사항 데이터 저장 완료:', savedData._id);
+    console.log('✅ 발령사항 데이터 저장 완료:', savedAppointmentData._id);
 
-    // 디버깅: 저장된 데이터 확인
-    console.log('\n🔍 === MongoDB에 저장된 데이터 ===');
-    console.log('savedData.leave 길이:', savedData.leave?.length);
-    console.log('savedData.leave 내용:', JSON.stringify(savedData.leave, null, 2));
-    console.log('====================================\n');
+    // MongoDB에 저장 (조교)
+    const actualCounts = new Map();
+    Object.entries(assistantParsedData.summary.byCollege).forEach(([college, count]) => {
+      actualCounts.set(college, count);
+    });
+
+    const savedAssistantData = await AssistantData.updateData({
+      assistants: assistantParsedData.assistants,
+      actualCounts: actualCounts,
+      summary: {
+        totalRecords: assistantParsedData.summary.total,
+        totalActive: assistantParsedData.summary.active,
+        totalFirstAppointments: assistantParsedData.assistants.filter(a => a.isFirstAppointment).length
+      },
+      uploadInfo: {
+        filename: req.file.originalname,
+        uploadedAt: new Date(),
+        fileSize: req.file.size,
+        uploadedBy: req.user?.username || 'admin'
+      }
+    });
+
+    console.log('✅ 조교 데이터 저장 완료:', savedAssistantData._id);
 
     // 업로드된 파일 삭제
     try {
@@ -244,11 +263,13 @@ router.post('/appointment', authMiddleware, upload.single('file'), async (req, r
 
     res.json({
       success: true,
-      message: '발령사항 데이터가 성공적으로 업로드되었습니다.',
+      message: '발령사항 및 조교 데이터가 성공적으로 업로드되었습니다.',
       stats: {
-        leave: parsedData.leave.length
+        leave: appointmentParsedData.leave.length,
+        assistants: assistantParsedData.assistants.length,
+        firstAppointments: assistantParsedData.assistants.filter(a => a.isFirstAppointment).length
       },
-      uploadedAt: savedData.uploadInfo.uploadedAt
+      uploadedAt: savedAppointmentData.uploadInfo.uploadedAt
     });
 
   } catch (error) {
