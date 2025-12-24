@@ -253,13 +253,51 @@ uploadBtn.addEventListener('click', async () => {
 
     uploadProgress.classList.add('hidden');
     uploadResult.classList.remove('hidden');
-    uploadResult.className = 'result success';
-    uploadResult.innerHTML = `
-      <h3>✅ 업로드 성공!</h3>
-      <p>${escapeHtml(result.message)}</p>
-      <p><strong>처리된 인원:</strong> ${escapeHtml(result.stats.processed)}명 / ${escapeHtml(result.stats.total)}명</p>
-      <p><strong>업로드 시간:</strong> ${escapeHtml(new Date(result.uploadedAt).toLocaleString('ko-KR'))}</p>
-    `;
+
+    // 파싱 경고 확인
+    const warnings = result.parseWarnings || {};
+    const unmappedCount = (warnings.unmappedPositions || []).length;
+    const unknownDeptCount = (warnings.unknownDepartments || []).length;
+    const hasWarnings = unmappedCount > 0 || unknownDeptCount > 0;
+
+    // 경고가 있으면 주의 스타일, 없으면 성공 스타일
+    uploadResult.className = hasWarnings ? 'result warning' : 'result success';
+
+    let html = `<h3>✅ 업로드 성공!</h3>`;
+    html += `<p>${escapeHtml(result.message)}</p>`;
+    html += `<p><strong>처리된 인원:</strong> ${escapeHtml(result.stats.processed)}명 / ${escapeHtml(result.stats.total)}명</p>`;
+    html += `<p><strong>업로드 시간:</strong> ${escapeHtml(new Date(result.uploadedAt).toLocaleString('ko-KR'))}</p>`;
+
+    // 경고 요약 표시
+    if (hasWarnings) {
+      html += `<div style="margin-top: 16px; padding: 12px; background-color: #fff3e0; border-left: 4px solid #d9730d; border-radius: 4px;">`;
+      html += `<p style="margin: 0 0 8px 0; font-weight: 600; color: #d9730d;">⚠️ 파싱 경고 발견</p>`;
+
+      if (unmappedCount > 0) {
+        html += `<p style="margin: 4px 0; font-size: 14px;">• <strong>${unmappedCount}개</strong>의 매핑되지 않은 직급이 발견되었습니다.</p>`;
+
+        // 처음 3개 직급 표시
+        const topUnmapped = (warnings.unmappedPositions || []).slice(0, 3);
+        if (topUnmapped.length > 0) {
+          html += `<p style="margin: 4px 0 4px 16px; font-size: 13px; color: rgba(55, 53, 47, 0.8);">`;
+          html += topUnmapped.map(item => `"${escapeHtml(item.position)}" (${item.count}명)`).join(', ');
+          if (unmappedCount > 3) html += ` 외 ${unmappedCount - 3}개`;
+          html += `</p>`;
+        }
+      }
+
+      if (unknownDeptCount > 0) {
+        html += `<p style="margin: 4px 0; font-size: 14px;">• <strong>${unknownDeptCount}개</strong>의 알 수 없는 소속이 발견되었습니다.</p>`;
+      }
+
+      html += `<p style="margin: 8px 0 0 0; font-size: 14px;">`;
+      html += `<a href="javascript:void(0)" onclick="document.querySelector('[data-tab=warnings]').click()" style="color: #d9730d; text-decoration: underline; font-weight: 600;">`;
+      html += `📋 파싱 경고 탭에서 자세히 보기 →`;
+      html += `</a></p>`;
+      html += `</div>`;
+    }
+
+    uploadResult.innerHTML = html;
 
     // 초기화
     selectedFile = null;
@@ -270,9 +308,10 @@ uploadBtn.addEventListener('click', async () => {
     // 업로드 기록 새로고침
     loadUploadHistory();
 
-    // 파싱 경고 표시
+    // 파싱 경고 표시 및 배지 업데이트
     if (result.parseWarnings) {
       displayParseWarnings(result.parseWarnings);
+      updateWarningBadge(result.parseWarnings);
     }
 
   } catch (error) {
@@ -1058,6 +1097,33 @@ tabBtns.forEach(btn => {
     }
   });
 });
+
+/**
+ * 파싱 경고 배지 업데이트 함수
+ */
+function updateWarningBadge(warnings) {
+  const warningsTab = document.querySelector('[data-tab="warnings"]');
+  if (!warningsTab) return;
+
+  // 기존 배지 제거
+  const existingBadge = warningsTab.querySelector('.warning-badge');
+  if (existingBadge) {
+    existingBadge.remove();
+  }
+
+  if (!warnings) return;
+
+  const unmappedCount = (warnings.unmappedPositions || []).length;
+  const unknownDeptCount = (warnings.unknownDepartments || []).length;
+  const totalWarnings = unmappedCount + unknownDeptCount;
+
+  if (totalWarnings > 0) {
+    const badge = document.createElement('span');
+    badge.className = 'warning-badge';
+    badge.textContent = totalWarnings;
+    warningsTab.appendChild(badge);
+  }
+}
 
 /**
  * 파싱 경고 표시 함수
