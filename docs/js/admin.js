@@ -1267,5 +1267,289 @@ function displayParseWarnings(warnings) {
   warningsContent.innerHTML = html;
 }
 
+// ============================================
+// 조교 관리 기능
+// ============================================
+
+let currentAssistantData = null;
+
+/**
+ * 조교 데이터 업로드
+ */
+async function uploadAssistantData() {
+  const fileInput = document.getElementById('assistantFileInput');
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert('파일을 선택해주세요.');
+    return;
+  }
+
+  const resultDiv = document.getElementById('assistantUploadResult');
+  resultDiv.className = 'result';
+  resultDiv.classList.remove('hidden');
+  resultDiv.innerHTML = '<p>파일을 업로드하는 중...</p>';
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/assistant/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || result.message || '업로드 실패');
+    }
+
+    // 성공 메시지
+    resultDiv.className = 'result success';
+    let html = '<h3>✅ 업로드 성공</h3>';
+    html += `<p>조교 데이터가 성공적으로 업로드되었습니다.</p>`;
+    html += `<ul style="margin-top: 12px; padding-left: 20px;">`;
+    html += `<li>전체 레코드: ${result.data.totalRecords}개</li>`;
+    html += `<li>재직 조교: ${result.data.uniqueActive}명</li>`;
+    html += `<li>최초임용: ${result.data.firstAppointments}명</li>`;
+    html += `</ul>`;
+
+    if (result.data.byCollege) {
+      html += `<h4 style="margin-top: 16px;">대학별 재직 인원</h4>`;
+      html += `<ul style="padding-left: 20px;">`;
+      Object.entries(result.data.byCollege).forEach(([college, count]) => {
+        html += `<li>${college}: ${count}명</li>`;
+      });
+      html += `</ul>`;
+    }
+
+    resultDiv.innerHTML = html;
+
+    // 파일 입력 초기화
+    fileInput.value = '';
+
+    // 조교 데이터 다시 로드
+    await loadAssistantData();
+
+  } catch (error) {
+    console.error('조교 데이터 업로드 오류:', error);
+    resultDiv.className = 'result error';
+    resultDiv.innerHTML = `
+      <h3>❌ 업로드 실패</h3>
+      <p>${error.message}</p>
+    `;
+  }
+}
+
+/**
+ * 조교 데이터 로드
+ */
+async function loadAssistantData() {
+  try {
+    const response = await fetch('/api/assistant', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || '데이터 로드 실패');
+    }
+
+    if (!result.data) {
+      return;
+    }
+
+    currentAssistantData = result.data;
+    displayAssistantAllocations();
+
+  } catch (error) {
+    console.error('조교 데이터 로드 오류:', error);
+  }
+}
+
+/**
+ * 조교 배정 인원 편집기 표시
+ */
+function displayAssistantAllocations() {
+  const editor = document.getElementById('assistantAllocationEditor');
+  const saveBtn = document.getElementById('saveAssistantAllocations');
+
+  if (!currentAssistantData || !currentAssistantData.byCollege) {
+    editor.innerHTML = '<p class="info-text">조교 데이터를 업로드하면 배정 인원 설정이 여기에 표시됩니다.</p>';
+    saveBtn.classList.add('hidden');
+    return;
+  }
+
+  let html = '<div style="max-height: 500px; overflow-y: auto;">';
+  html += '<table style="width: 100%; border-collapse: collapse; font-size: 14px;">';
+  html += '<thead>';
+  html += '<tr style="background-color: rgba(55, 53, 47, 0.04); border-bottom: 2px solid rgba(55, 53, 47, 0.16);">';
+  html += '<th style="padding: 12px; text-align: left;">대학/부서</th>';
+  html += '<th style="padding: 12px; text-align: center; width: 120px;">배정인원</th>';
+  html += '<th style="padding: 12px; text-align: center; width: 120px;">재직인원</th>';
+  html += '<th style="padding: 12px; text-align: center; width: 120px;">잔여인원</th>';
+  html += '</tr>';
+  html += '</thead>';
+  html += '<tbody>';
+
+  Object.entries(currentAssistantData.byCollege).forEach(([college, data]) => {
+    const allocated = data.allocated || 0;
+    const actual = data.actual || 0;
+    const remaining = data.remaining || 0;
+    const remainingColor = remaining >= 0 ? 'inherit' : '#d44c47';
+
+    html += '<tr style="border-bottom: 1px solid rgba(55, 53, 47, 0.09);">';
+    html += `<td style="padding: 12px;">${escapeHtml(college)}</td>`;
+    html += `<td style="padding: 12px; text-align: center;">`;
+    html += `<input type="number" class="allocation-input" data-college="${escapeHtml(college)}" `;
+    html += `value="${allocated}" min="0" `;
+    html += `style="width: 80px; padding: 6px; border: 1px solid rgba(55, 53, 47, 0.16); border-radius: 4px; text-align: center;">`;
+    html += `</td>`;
+    html += `<td style="padding: 12px; text-align: center;">${actual}</td>`;
+    html += `<td style="padding: 12px; text-align: center; color: ${remainingColor}; font-weight: 500;">${remaining}</td>`;
+    html += '</tr>';
+  });
+
+  html += '</tbody>';
+  html += '</table>';
+  html += '</div>';
+
+  editor.innerHTML = html;
+  saveBtn.classList.remove('hidden');
+
+  // 입력 변경 시 잔여 인원 업데이트
+  document.querySelectorAll('.allocation-input').forEach(input => {
+    input.addEventListener('input', updateRemainingCounts);
+  });
+}
+
+/**
+ * 잔여 인원 실시간 업데이트
+ */
+function updateRemainingCounts() {
+  document.querySelectorAll('.allocation-input').forEach(input => {
+    const college = input.getAttribute('data-college');
+    const allocated = parseInt(input.value) || 0;
+    const actual = currentAssistantData.byCollege[college].actual || 0;
+    const remaining = allocated - actual;
+
+    const row = input.closest('tr');
+    const remainingCell = row.querySelector('td:last-child');
+    remainingCell.textContent = remaining;
+    remainingCell.style.color = remaining >= 0 ? 'inherit' : '#d44c47';
+  });
+}
+
+/**
+ * 배정 인원 저장
+ */
+async function saveAssistantAllocations() {
+  const resultDiv = document.getElementById('assistantAllocationResult');
+  resultDiv.className = 'result';
+  resultDiv.classList.remove('hidden');
+  resultDiv.innerHTML = '<p>저장 중...</p>';
+
+  try {
+    const allocations = {};
+
+    document.querySelectorAll('.allocation-input').forEach(input => {
+      const college = input.getAttribute('data-college');
+      allocations[college] = parseInt(input.value) || 0;
+    });
+
+    const response = await fetch('/api/assistant/allocations', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ allocations })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || '저장 실패');
+    }
+
+    resultDiv.className = 'result success';
+    resultDiv.innerHTML = '<h3>✅ 저장 완료</h3><p>배정 인원이 성공적으로 저장되었습니다.</p>';
+
+    // 데이터 다시 로드
+    await loadAssistantData();
+
+  } catch (error) {
+    console.error('배정 인원 저장 오류:', error);
+    resultDiv.className = 'result error';
+    resultDiv.innerHTML = `
+      <h3>❌ 저장 실패</h3>
+      <p>${error.message}</p>
+    `;
+  }
+}
+
+/**
+ * 조교 관리 이벤트 리스너 등록
+ */
+function initAssistantManagement() {
+  // 업로드 영역 클릭
+  const uploadArea = document.getElementById('assistantUploadArea');
+  const fileInput = document.getElementById('assistantFileInput');
+
+  if (uploadArea && fileInput) {
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    // 파일 선택 시 자동 업로드
+    fileInput.addEventListener('change', uploadAssistantData);
+
+    // 드래그 앤 드롭
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        fileInput.files = files;
+        uploadAssistantData();
+      }
+    });
+  }
+
+  // 저장 버튼
+  const saveBtn = document.getElementById('saveAssistantAllocations');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', saveAssistantAllocations);
+  }
+
+  // 조교 탭 활성화 시 데이터 로드
+  const assistantTab = document.querySelector('[data-tab="assistant"]');
+  if (assistantTab) {
+    assistantTab.addEventListener('click', () => {
+      if (!currentAssistantData) {
+        loadAssistantData();
+      }
+    });
+  }
+}
+
+// 초기화 시 조교 관리 기능 등록
+initAssistantManagement();
+
 // 초기화
 init();

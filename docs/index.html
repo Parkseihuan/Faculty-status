@@ -90,7 +90,10 @@
         비전임교원
       </button>
       <button class="faculty-tab" onclick="switchTab('other')" id="tab-other">
-        기타
+        기타 교원
+      </button>
+      <button class="faculty-tab" onclick="switchTab('assistant')" id="tab-assistant">
+        조교
       </button>
       <button class="faculty-tab" onclick="switchTab('researchYear')" id="tab-researchYear">
         연구년 교원
@@ -120,7 +123,7 @@
       <div class="footnote-content" id="footnoteContent">
         <div style="display: flex; gap: 20px; flex-wrap: wrap;">
           <div>
-            <strong>텍스트 스타일 (전임/비전임/기타 탭)</strong><br/>
+            <strong>텍스트 스타일 (전임/비전임/기타 교원 탭)</strong><br/>
             • <b>진한 글씨</b>: 연봉제 전임교원<br/>
             • <span style="color: #0b6e99; font-weight: bold;">파란색</span>: 휴직 중<br/>
             • <span style="color: #448361; font-weight: bold;">초록색</span>: 연구년 중<br/>
@@ -884,6 +887,9 @@
       } else if (currentTab === 'genderStats') {
         renderGenderStatsTable();
         return;
+      } else if (currentTab === 'assistant') {
+        renderAssistantTable();
+        return;
       }
 
       const { facultyData, deptStructure, fullTimePositions, partTimePositions, otherPositions } = globalData;
@@ -1016,6 +1022,131 @@
 
       document.getElementById('content').innerHTML = html;
     }
+
+    // ============================================
+    // 조교 데이터 관련 함수
+    // ============================================
+
+    let assistantData = null;
+
+    /**
+     * 조교 데이터 로드
+     */
+    async function loadAssistantData() {
+      try {
+        const response = await fetch('/api/assistant');
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          assistantData = result.data;
+        }
+      } catch (error) {
+        console.error('조교 데이터 로드 오류:', error);
+      }
+    }
+
+    /**
+     * 조교 테이블 렌더링
+     */
+    function renderAssistantTable() {
+      const contentDiv = document.getElementById('content');
+
+      if (!assistantData || !assistantData.byCollege) {
+        contentDiv.innerHTML = `
+          <div class="loading">
+            <div>
+              <p>조교 데이터가 없습니다.</p>
+              <p style="font-size: 14px; color: rgba(55, 53, 47, 0.65);">
+                관리자 페이지에서 교원 발령사항 현황 파일을 업로드해주세요.
+              </p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const currentDate = new Date().toLocaleDateString('ko-KR');
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th colspan="5">조교 현황 (${currentDate})</th>
+            </tr>
+            <tr>
+              <th>대학/부서</th>
+              <th>배정인원</th>
+              <th>재직인원</th>
+              <th>잔여인원</th>
+              <th>비고</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      // 대학별 데이터 표시
+      const colleges = Object.keys(assistantData.byCollege).sort();
+
+      colleges.forEach(college => {
+        const data = assistantData.byCollege[college];
+        const allocated = data.allocated || 0;
+        const actual = data.actual || 0;
+        const remaining = data.remaining || 0;
+        const firstAppointments = data.firstAppointments || [];
+
+        // 잔여인원 색상
+        const remainingStyle = remaining < 0 ? 'color: #d44c47; font-weight: bold;' : '';
+
+        // 비고: 최초임용 조교 목록
+        const remarks = firstAppointments.length > 0
+          ? `최초임용: ${firstAppointments.join(', ')}`
+          : '';
+
+        html += `
+          <tr>
+            <td>${college}</td>
+            <td style="text-align: center;">${allocated}</td>
+            <td style="text-align: center;">${actual}</td>
+            <td style="text-align: center; ${remainingStyle}">${remaining}</td>
+            <td style="font-size: 13px;">${remarks}</td>
+          </tr>
+        `;
+      });
+
+      // 합계 행
+      let totalAllocated = 0;
+      let totalActual = 0;
+      let totalRemaining = 0;
+      let totalFirstAppointments = 0;
+
+      Object.values(assistantData.byCollege).forEach(data => {
+        totalAllocated += data.allocated || 0;
+        totalActual += data.actual || 0;
+        totalRemaining += data.remaining || 0;
+        totalFirstAppointments += (data.firstAppointments || []).length;
+      });
+
+      const totalRemainingStyle = totalRemaining < 0 ? 'color: #d44c47; font-weight: bold;' : '';
+
+      html += `
+        <tr class="total-row">
+          <td>합계</td>
+          <td style="text-align: center;">${totalAllocated}</td>
+          <td style="text-align: center;">${totalActual}</td>
+          <td style="text-align: center; ${totalRemainingStyle}">${totalRemaining}</td>
+          <td>최초임용: ${totalFirstAppointments}명</td>
+        </tr>
+      `;
+
+      html += '</tbody></table>';
+
+      contentDiv.innerHTML = html;
+    }
+
+    // 페이지 로드 시 조교 데이터도 함께 로드
+    window.addEventListener('DOMContentLoaded', () => {
+      loadAssistantData();
+    });
   </script>
 </body>
 </html>

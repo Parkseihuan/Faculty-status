@@ -41,6 +41,7 @@
       <!-- 탭 메뉴 -->
       <div class="tabs">
         <button class="tab-btn active" data-tab="upload">📤 엑셀 업로드</button>
+        <button class="tab-btn" data-tab="assistant">👨‍🎓 조교 관리</button>
         <button class="tab-btn" data-tab="organization">🏛️ 조직 순서 설정</button>
         <button class="tab-btn" data-tab="warnings">⚠️ 파싱 경고</button>
         <button class="tab-btn" data-tab="history">📜 업로드 기록</button>
@@ -137,6 +138,40 @@
             </div>
 
             <div id="appointmentUploadResult" class="result hidden"></div>
+          </div>
+        </div>
+
+        <!-- 조교 관리 탭 -->
+        <div id="assistant-tab" class="tab-pane">
+          <div class="card">
+            <h2>조교 데이터 업로드</h2>
+            <p class="description">교원 발령사항 현황 Excel 파일을 업로드하여 조교 데이터를 추출합니다.</p>
+
+            <div class="upload-area" id="assistantUploadArea">
+              <div class="upload-icon">📊</div>
+              <p>클릭하거나 파일을 드래그하여 업로드</p>
+              <p style="font-size: 12px; color: rgba(55, 53, 47, 0.45);">
+                지원 형식: XLS, XLSX (최대 50MB)
+              </p>
+              <input type="file" id="assistantFileInput" accept=".xls,.xlsx" style="display: none;">
+            </div>
+
+            <div id="assistantUploadResult" class="result hidden"></div>
+          </div>
+
+          <div class="card">
+            <h2>조교 배정 인원 설정</h2>
+            <p class="description">대학별 조교 배정 인원을 입력하세요. 재직 인원은 자동으로 계산됩니다.</p>
+
+            <div id="assistantAllocationEditor">
+              <p class="info-text">조교 데이터를 업로드하면 배정 인원 설정이 여기에 표시됩니다.</p>
+            </div>
+
+            <div style="margin-top: 24px; text-align: right;">
+              <button id="saveAssistantAllocations" class="btn btn-success hidden">💾 배정 인원 저장</button>
+            </div>
+
+            <div id="assistantAllocationResult" class="result hidden"></div>
           </div>
         </div>
 

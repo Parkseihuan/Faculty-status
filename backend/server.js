@@ -40,11 +40,13 @@ const authRoutes = require('./routes/auth');
 const facultyRoutes = require('./routes/faculty');
 const uploadRoutes = require('./routes/upload');
 const organizationRoutes = require('./routes/organization');
+const assistantRoutes = require('./routes/assistant');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/organization', organizationRoutes);
+app.use('/api/assistant', assistantRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
