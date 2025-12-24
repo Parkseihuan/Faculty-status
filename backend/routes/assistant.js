@@ -32,14 +32,30 @@ router.get('/', async (req, res) => {
     // 잔여 인원 계산
     const remaining = data.getRemainingByCollege();
 
+    // Map을 일반 객체로 변환
+    const allocationsObj = {};
+    const actualCountsObj = {};
+
+    if (data.allocations) {
+      data.allocations.forEach((value, key) => {
+        allocationsObj[key] = value;
+      });
+    }
+
+    if (data.actualCounts) {
+      data.actualCounts.forEach((value, key) => {
+        actualCountsObj[key] = value;
+      });
+    }
+
     // 대학별 데이터 정리
     const byCollege = {};
     data.assistants.forEach(assistant => {
       if (!byCollege[assistant.college]) {
         byCollege[assistant.college] = {
           college: assistant.college,
-          allocated: data.allocations.get(assistant.college) || 0,
-          actual: data.actualCounts.get(assistant.college) || 0,
+          allocated: allocationsObj[assistant.college] || 0,
+          actual: actualCountsObj[assistant.college] || 0,
           remaining: remaining[assistant.college] || 0,
           assistants: [],
           firstAppointments: []
@@ -59,7 +75,9 @@ router.get('/', async (req, res) => {
         byCollege: byCollege,
         summary: data.summary,
         uploadInfo: data.uploadInfo,
-        updatedAt: data.updatedAt
+        updatedAt: data.updatedAt,
+        allocations: allocationsObj,
+        actualCounts: actualCountsObj
       }
     });
 
