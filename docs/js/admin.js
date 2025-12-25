@@ -1277,12 +1277,26 @@ let currentAssistantData = null;
  * 조교 데이터 로드
  */
 async function loadAssistantData() {
+  const editor = document.getElementById('assistantAllocationEditor');
+  const saveBtn = document.getElementById('saveAssistantAllocations');
+
   try {
+    // 로딩 표시
+    if (editor) {
+      editor.innerHTML = '<p class="info-text">조교 데이터를 불러오는 중...</p>';
+    }
+
     const response = await fetch('/api/assistant', {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     });
+
+    // JSON 파싱 전에 응답 타입 확인
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('서버가 올바른 응답을 반환하지 않았습니다. 배포가 완료되지 않았을 수 있습니다.');
+    }
 
     const result = await response.json();
 
@@ -1290,7 +1304,20 @@ async function loadAssistantData() {
       throw new Error(result.error || '데이터 로드 실패');
     }
 
-    if (!result.data) {
+    if (!result.data || !result.data.byCollege || Object.keys(result.data.byCollege).length === 0) {
+      if (editor) {
+        editor.innerHTML = `
+          <p class="info-text">조교 데이터가 없습니다.</p>
+          <p class="info-text" style="margin-top: 12px;">
+            <a href="javascript:void(0)" onclick="document.querySelector('[data-tab=upload]').click()">
+              📤 엑셀 업로드 탭으로 이동하여 교원 발령사항 파일을 업로드해주세요.
+            </a>
+          </p>
+        `;
+      }
+      if (saveBtn) {
+        saveBtn.classList.add('hidden');
+      }
       return;
     }
 
@@ -1299,6 +1326,23 @@ async function loadAssistantData() {
 
   } catch (error) {
     console.error('조교 데이터 로드 오류:', error);
+
+    // 사용자에게 명확한 에러 메시지 표시
+    if (editor) {
+      editor.innerHTML = `
+        <div style="padding: 20px; background-color: rgba(235, 87, 87, 0.1); border: 1px solid rgba(235, 87, 87, 0.2); border-radius: 4px;">
+          <p style="margin: 0 0 8px 0; font-weight: 600; color: #d44c47;">⚠️ 조교 데이터 로드 실패</p>
+          <p style="margin: 0; color: rgba(55, 53, 47, 0.8); font-size: 14px;">${error.message}</p>
+          <p style="margin: 12px 0 0 0; font-size: 13px; color: rgba(55, 53, 47, 0.65);">
+            배포가 진행 중일 수 있습니다. 잠시 후 페이지를 새로고침 해주세요.
+          </p>
+        </div>
+      `;
+    }
+
+    if (saveBtn) {
+      saveBtn.classList.add('hidden');
+    }
   }
 }
 
