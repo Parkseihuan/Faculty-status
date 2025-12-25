@@ -2,14 +2,6 @@
  * 관리자 페이지 메인 스크립트
  */
 
-// API Base URL 설정
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:3000/api'
-  : 'https://faculty-status-backend-2s16.onrender.com/api';
-
-console.log('Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
-console.log('API Base URL:', API_BASE_URL);
-
 /**
  * HTML 이스케이프 함수 (XSS 방지)
  */
