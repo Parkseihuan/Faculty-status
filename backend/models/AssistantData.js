@@ -97,15 +97,16 @@ assistantDataSchema.statics.updateData = async function(data) {
 
   if (existing) {
     // 기존 배정 인원 유지
-    data.allocations = existing.allocations || {};
+    data.allocations = existing.allocations || new Map();
   } else {
     // 초기 배정 인원 설정 (재직 인원과 동일하게)
-    data.allocations = {};
+    const allocationsMap = new Map();
     if (data.actualCounts) {
       data.actualCounts.forEach((count, college) => {
-        data.allocations.set(college, count);
+        allocationsMap.set(college, count);
       });
     }
+    data.allocations = allocationsMap;
   }
 
   // 기존 데이터 모두 삭제
