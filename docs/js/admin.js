@@ -2,6 +2,14 @@
  * 관리자 페이지 메인 스크립트
  */
 
+// API Base URL 설정
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000/api'
+  : 'https://faculty-status-backend-2s16.onrender.com/api';
+
+console.log('Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
+console.log('API Base URL:', API_BASE_URL);
+
 /**
  * HTML 이스케이프 함수 (XSS 방지)
  */
@@ -1286,7 +1294,7 @@ async function loadAssistantData() {
       editor.innerHTML = '<p class="info-text">조교 데이터를 불러오는 중...</p>';
     }
 
-    const response = await fetch('/api/assistant', {
+    const response = await fetch(`${API_BASE_URL}/assistant`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
@@ -1436,7 +1444,7 @@ async function saveAssistantAllocations() {
       allocations[college] = parseInt(input.value) || 0;
     });
 
-    const response = await fetch('/api/assistant/allocations', {
+    const response = await fetch(`${API_BASE_URL}/assistant/allocations`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

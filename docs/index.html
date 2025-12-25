@@ -160,6 +160,11 @@
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script>
+    // API Base URL 설정
+    const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:3000/api'
+      : 'https://faculty-status-backend-2s16.onrender.com/api';
+
     let globalData = null;
     let currentTab = 'fullTime'; // 기본값: 전임교원
 
@@ -1034,7 +1039,7 @@
      */
     async function loadAssistantData() {
       try {
-        const response = await fetch('/api/assistant');
+        const response = await fetch(`${API_BASE_URL}/assistant`);
         const result = await response.json();
 
         if (result.success && result.data) {
