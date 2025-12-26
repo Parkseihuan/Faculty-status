@@ -2,33 +2,62 @@ const XLSX = require('xlsx');
 
 /**
  * 조교 데이터 파서
- * 교원 발령사항 현황 Excel 파일에서 조교 데이터를 추출합니다.
+ * 교원 발령사항 현황 Excel 파일에서 조교 데이터를 추출하여 PDF 형식으로 구조화합니다.
  *
  * 출력 형식:
  * {
- *   assistants: [
+ *   colleges: [
  *     {
- *       name: '이름',
- *       college: '소속 대학',
- *       department: '소속 학과',
- *       position: '직급',
- *       employmentStatus: '재직구분',
- *       appointmentType: '발령구분',  // 최초임용, 재임용
- *       startDate: '발령시작일',
- *       endDate: '발령종료일'
+ *       categoryName: '무도대학',
+ *       departments: [
+ *         {
+ *           mainDept: '교학과',
+ *           subDepts: ['(겸)경호학과', '(겸)무도계열전공학부'],
+ *           allocated: 1,
+ *           current: 1,
+ *           assistants: [
+ *             { name: '정성연', isNew: false, startDate: '' }
+ *           ]
+ *         }
+ *       ]
  *     }
  *   ],
- *   summary: {
- *     total: 전체 조교 수,
- *     active: 재직 중인 조교 수,
- *     byCollege: { '대학명': 인원수 }
- *   }
+ *   administrative: [...],
+ *   summary: { totalColleges: 29, totalAdmin: 20, grandTotal: 49 }
  * }
  */
 class AssistantParser {
   constructor() {
     // 헤더 행 인덱스 (0-based: 실제 4번째 행)
     this.headerRow = 3;
+
+    // 대학 순서 정의 (PDF와 동일한 순서)
+    this.collegeOrder = [
+      '무도대학',
+      '체육과학대학',
+      '문화예술대학',
+      '인문사회융합대학',
+      'AI융합대학',
+      '보건복지과학대학',
+      'AI바이오융합대학',
+      '용오름대학',
+      '교육대학원'
+    ];
+
+    // 행정부서 순서 정의
+    this.adminOrder = [
+      '부총장실',
+      '기획처',
+      '교무처',
+      '사무처',
+      '국제교류교육원',
+      '중앙도서관',
+      '생활관',
+      '미래인재교육원',
+      '체육지원실',
+      '교육혁신처',
+      '학생생활상담센터'
+    ];
   }
 
   /**
@@ -51,62 +80,30 @@ class AssistantParser {
         defval: ''
       });
 
-      // 조교 데이터 필터링 및 변환
-      const assistants = [];
-      const byCollege = {};
-      let activeCount = 0;
+      // 조교 데이터 필터링
+      const assistantRows = rawData.filter(row =>
+        row['직렬'] === '조교' && (row['재직구분'] || '').trim() === '재직'
+      );
 
-      rawData.forEach(row => {
-        // 직렬이 "조교"인 경우만 처리
-        if (row['직렬'] !== '조교') {
-          return;
-        }
+      // 부서별로 그룹화
+      const departmentMap = this.groupByDepartment(assistantRows);
 
-        const employmentStatus = (row['재직구분'] || '').trim();
-        const isActive = employmentStatus === '재직';
+      // 대학과 행정부서로 분류
+      const { colleges, administrative } = this.classifyDepartments(departmentMap);
 
-        // 재직 중인 조교만 카운트
-        if (isActive) {
-          activeCount++;
-        }
-
-        const college = row['대학'] || row['소속'] || '기타';
-        const appointmentType = row['발령구분'] || '';
-
-        // 대학별 재직 인원 카운트
-        if (isActive) {
-          byCollege[college] = (byCollege[college] || 0) + 1;
-        }
-
-        const assistant = {
-          name: row['성명'] || '',
-          college: college,
-          department: row['소속'] || '',
-          position: row['직급'] || '조교',
-          employmentStatus: employmentStatus,
-          appointmentType: appointmentType,
-          startDate: this.formatDate(row['발령시작일']),
-          endDate: this.formatDate(row['발령종료일']),
-          isActive: isActive,
-          isFirstAppointment: appointmentType === '최초임용'
-        };
-
-        assistants.push(assistant);
-      });
-
-      // 재직 중인 조교만 필터링
-      const activeAssistants = assistants.filter(a => a.isActive);
-
-      // 중복 제거 (동일 인물의 여러 발령 기록 중 최신 것만)
-      const uniqueAssistants = this.deduplicateAssistants(activeAssistants);
+      // 요약 정보 계산
+      const summary = {
+        totalColleges: colleges.reduce((sum, college) =>
+          sum + college.departments.reduce((dSum, dept) => dSum + dept.current, 0), 0),
+        totalAdmin: administrative.reduce((sum, admin) =>
+          sum + admin.departments.reduce((dSum, dept) => dSum + dept.current, 0), 0)
+      };
+      summary.grandTotal = summary.totalColleges + summary.totalAdmin;
 
       return {
-        assistants: uniqueAssistants,
-        summary: {
-          total: assistants.length,
-          active: activeCount,
-          byCollege: byCollege
-        }
+        colleges,
+        administrative,
+        summary
       };
 
     } catch (error) {
@@ -116,26 +113,142 @@ class AssistantParser {
   }
 
   /**
-   * 동일 인물의 중복 레코드 제거 (최신 발령만 유지)
+   * 부서별로 조교 데이터 그룹화
    */
-  deduplicateAssistants(assistants) {
-    const uniqueMap = new Map();
+  groupByDepartment(rows) {
+    const deptMap = new Map();
 
-    assistants.forEach(assistant => {
-      const key = `${assistant.name}_${assistant.college}`;
-      const existing = uniqueMap.get(key);
+    rows.forEach(row => {
+      const college = this.normalizeCollegeName(row['대학'] || '기타');
+      const dept = (row['소속'] || '').trim();
+      const name = (row['성명'] || '').trim();
+      const appointmentType = (row['발령구분'] || '').trim();
+      const startDate = this.formatDate(row['발령시작일']);
 
-      if (!existing) {
-        uniqueMap.set(key, assistant);
-      } else {
-        // 발령시작일이 더 최근인 것으로 교체
-        if (assistant.startDate > existing.startDate) {
-          uniqueMap.set(key, assistant);
-        }
+      if (!dept || !name) return;
+
+      const key = `${college}|${dept}`;
+
+      if (!deptMap.has(key)) {
+        deptMap.set(key, {
+          college,
+          department: dept,
+          assistants: []
+        });
+      }
+
+      deptMap.get(key).assistants.push({
+        name,
+        isNew: appointmentType === '최초임용',
+        startDate
+      });
+    });
+
+    return deptMap;
+  }
+
+  /**
+   * 대학명 정규화
+   */
+  normalizeCollegeName(collegeName) {
+    const normalized = collegeName.trim();
+
+    // 별칭 처리
+    if (normalized.includes('보건복지') || normalized.includes('AI바이오')) {
+      return 'AI바이오융합대학';
+    }
+    if (normalized.includes('AI융합') || normalized.includes('인문사회')) {
+      return '인문사회융합대학';
+    }
+
+    return normalized;
+  }
+
+  /**
+   * 단과대학과 행정부서로 분류
+   */
+  classifyDepartments(departmentMap) {
+    const collegeMap = new Map();
+    const adminMap = new Map();
+
+    departmentMap.forEach((data, key) => {
+      const { college, department, assistants } = data;
+
+      // 행정부서 판별
+      const isAdmin = this.adminOrder.some(admin => college.includes(admin) || department.includes(admin));
+      const targetMap = isAdmin ? adminMap : collegeMap;
+      const categoryName = isAdmin ? this.findAdminCategory(college, department) : college;
+
+      if (!targetMap.has(categoryName)) {
+        targetMap.set(categoryName, []);
+      }
+
+      // 부서 구조 파싱 (메인 부서와 겸임 부서)
+      const deptStructure = this.parseDepartmentStructure(department);
+
+      targetMap.get(categoryName).push({
+        mainDept: deptStructure.mainDept,
+        subDepts: deptStructure.subDepts,
+        allocated: assistants.length,  // 현재는 재직인원과 동일
+        current: assistants.length,
+        assistants: assistants
+      });
+    });
+
+    // 정렬 및 구조화
+    const colleges = this.sortAndStructure(collegeMap, this.collegeOrder);
+    const administrative = this.sortAndStructure(adminMap, this.adminOrder);
+
+    return { colleges, administrative };
+  }
+
+  /**
+   * 행정부서 카테고리 찾기
+   */
+  findAdminCategory(college, department) {
+    for (const admin of this.adminOrder) {
+      if (college.includes(admin) || department.includes(admin)) {
+        return admin;
+      }
+    }
+    return college;
+  }
+
+  /**
+   * 부서명에서 메인 부서와 겸임 부서 분리
+   */
+  parseDepartmentStructure(department) {
+    const parts = department.split('\n').map(p => p.trim()).filter(p => p);
+
+    const mainDept = parts.find(p => !p.startsWith('(겸)')) || parts[0] || department;
+    const subDepts = parts.filter(p => p.startsWith('(겸)'));
+
+    return { mainDept, subDepts };
+  }
+
+  /**
+   * 순서에 맞게 정렬 및 구조화
+   */
+  sortAndStructure(categoryMap, order) {
+    const result = [];
+
+    order.forEach(categoryName => {
+      if (categoryMap.has(categoryName)) {
+        result.push({
+          categoryName,
+          departments: categoryMap.get(categoryName)
+        });
       }
     });
 
-    return Array.from(uniqueMap.values());
+    // 순서에 없는 항목 추가 (기타)
+    categoryMap.forEach((departments, categoryName) => {
+      if (!order.includes(categoryName)) {
+        result.push({ categoryName, departments });
+      }
+    });
+
+    return result;
   }
 
   /**

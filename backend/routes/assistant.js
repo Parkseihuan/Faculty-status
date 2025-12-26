@@ -29,55 +29,46 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // 잔여 인원 계산
-    const remaining = data.getRemainingByCollege();
-
     // Map을 일반 객체로 변환
     const allocationsObj = {};
-    const actualCountsObj = {};
-
     if (data.allocations) {
       data.allocations.forEach((value, key) => {
         allocationsObj[key] = value;
       });
     }
 
-    if (data.actualCounts) {
-      data.actualCounts.forEach((value, key) => {
-        actualCountsObj[key] = value;
+    // colleges와 administrative를 plain object로 변환
+    const colleges = JSON.parse(JSON.stringify(data.colleges));
+    const administrative = JSON.parse(JSON.stringify(data.administrative));
+
+    // 배정 인원 반영
+    colleges.forEach(college => {
+      college.departments.forEach(dept => {
+        const key = `${college.categoryName}|${dept.mainDept}`;
+        if (allocationsObj[key] !== undefined) {
+          dept.allocated = allocationsObj[key];
+        }
       });
-    }
+    });
 
-    // 대학별 데이터 정리
-    const byCollege = {};
-    data.assistants.forEach(assistant => {
-      if (!byCollege[assistant.college]) {
-        byCollege[assistant.college] = {
-          college: assistant.college,
-          allocated: allocationsObj[assistant.college] || 0,
-          actual: actualCountsObj[assistant.college] || 0,
-          remaining: remaining[assistant.college] || 0,
-          assistants: [],
-          firstAppointments: []
-        };
-      }
-
-      byCollege[assistant.college].assistants.push(assistant);
-
-      if (assistant.isFirstAppointment) {
-        byCollege[assistant.college].firstAppointments.push(assistant.name);
-      }
+    administrative.forEach(admin => {
+      admin.departments.forEach(dept => {
+        const key = `${admin.categoryName}|${dept.mainDept}`;
+        if (allocationsObj[key] !== undefined) {
+          dept.allocated = allocationsObj[key];
+        }
+      });
     });
 
     res.json({
       success: true,
       data: {
-        byCollege: byCollege,
+        colleges,
+        administrative,
         summary: data.summary,
         uploadInfo: data.uploadInfo,
         updatedAt: data.updatedAt,
-        allocations: allocationsObj,
-        actualCounts: actualCountsObj
+        allocations: allocationsObj
       }
     });
 
@@ -93,6 +84,9 @@ router.get('/', async (req, res) => {
 /**
  * POST /api/assistant/upload
  * 조교 데이터 업로드 (교원 발령사항 Excel 파일)
+ *
+ * 주의: 이 엔드포인트는 upload.js의 /api/upload/appointment에서 자동으로 처리됩니다.
+ * 별도로 호출할 필요가 없습니다.
  */
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {
@@ -108,21 +102,11 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     const parser = new AssistantParser();
     const result = await parser.parseFromBuffer(req.file.buffer);
 
-    // Map 객체로 변환
-    const actualCounts = new Map();
-    Object.entries(result.summary.byCollege).forEach(([college, count]) => {
-      actualCounts.set(college, count);
-    });
-
     // 데이터베이스에 저장
     const savedData = await AssistantData.updateData({
-      assistants: result.assistants,
-      actualCounts: actualCounts,
-      summary: {
-        totalRecords: result.summary.total,
-        totalActive: result.summary.active,
-        totalFirstAppointments: result.assistants.filter(a => a.isFirstAppointment).length
-      },
+      colleges: result.colleges,
+      administrative: result.administrative,
+      summary: result.summary,
       uploadInfo: {
         filename: req.file.originalname,
         uploadedAt: new Date(),
@@ -132,19 +116,17 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     });
 
     console.log('조교 데이터 저장 완료');
-    console.log('- 전체 레코드:', result.summary.total);
-    console.log('- 재직 조교:', result.summary.active);
-    console.log('- 중복 제거:', result.assistants.length);
+    console.log('- 단과대학(원):', result.summary.totalColleges);
+    console.log('- 행정부서:', result.summary.totalAdmin);
+    console.log('- 전체:', result.summary.grandTotal);
 
     res.json({
       success: true,
       message: '조교 데이터가 성공적으로 업로드되었습니다.',
       data: {
-        totalRecords: result.summary.total,
-        totalActive: result.summary.active,
-        uniqueActive: result.assistants.length,
-        firstAppointments: result.assistants.filter(a => a.isFirstAppointment).length,
-        byCollege: result.summary.byCollege
+        totalColleges: result.summary.totalColleges,
+        totalAdmin: result.summary.totalAdmin,
+        grandTotal: result.summary.grandTotal
       }
     });
 
@@ -161,7 +143,14 @@ router.post('/upload', upload.single('file'), async (req, res) => {
  * PUT /api/assistant/allocations
  * 배정 인원 업데이트
  *
- * Body: { allocations: { "대학명": 배정인원, ... } }
+ * Body: {
+ *   allocations: {
+ *     "카테고리명|부서명": 배정인원,
+ *     "무도대학|교학과": 1,
+ *     "기획처|대외협력과": 2,
+ *     ...
+ *   }
+ * }
  */
 router.put('/allocations', async (req, res) => {
   try {
@@ -173,20 +162,21 @@ router.put('/allocations', async (req, res) => {
       });
     }
 
-    // Map 객체로 변환
-    const allocationsMap = new Map();
-    Object.entries(allocations).forEach(([college, count]) => {
-      allocationsMap.set(college, Number(count));
-    });
+    const updatedData = await AssistantData.updateAllocations(allocations);
 
-    const updatedData = await AssistantData.updateAllocations(allocationsMap);
+    // Map을 객체로 변환하여 응답
+    const allocationsObj = {};
+    if (updatedData.allocations) {
+      updatedData.allocations.forEach((value, key) => {
+        allocationsObj[key] = value;
+      });
+    }
 
     res.json({
       success: true,
       message: '배정 인원이 업데이트되었습니다.',
       data: {
-        allocations: Object.fromEntries(updatedData.allocations),
-        actualCounts: Object.fromEntries(updatedData.actualCounts)
+        allocations: allocationsObj
       }
     });
 

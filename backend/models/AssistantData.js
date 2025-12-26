@@ -1,57 +1,69 @@
 const mongoose = require('mongoose');
 
 /**
- * 조교 현황 데이터 스키마
+ * 조교 현황 데이터 스키마 (PDF 형식)
  *
  * 조교 데이터 구조:
- * - 재직인원: Excel 파일에서 파싱된 실제 재직 중인 조교 수
- * - 배정인원: 관리자가 입력하는 배정 인원
- * - 잔여인원: 배정인원 - 재직인원 (자동 계산)
- * - 비고: 최초임용 조교 목록
+ * - colleges: 단과대학(원) 목록
+ * - administrative: 행정부서 목록
+ * - allocations: 부서별 배정 인원 (관리자 입력)
+ * - summary: 통계 정보
  */
+
+// 조교 개인 정보
+const assistantSchema = new mongoose.Schema({
+  name: String,
+  isNew: Boolean,        // 최초임용 여부
+  startDate: String      // 발령시작일
+}, { _id: false });
+
+// 부서 정보
+const departmentSchema = new mongoose.Schema({
+  mainDept: String,                // 주 부서명
+  subDepts: [String],              // 겸임 부서 목록 [(겸)...]
+  allocated: Number,               // 배정인원
+  current: Number,                 // 재직인원
+  assistants: [assistantSchema]    // 조교 목록
+}, { _id: false });
+
+// 대분류 (대학 또는 행정부서)
+const categorySchema = new mongoose.Schema({
+  categoryName: String,            // 카테고리명 (예: 무도대학, 기획처)
+  departments: [departmentSchema]  // 부서 목록
+}, { _id: false });
+
 const assistantDataSchema = new mongoose.Schema({
-  // 파싱된 조교 데이터 (전체 목록)
-  assistants: {
-    type: [{
-      name: String,
-      college: String,
-      department: String,
-      position: String,
-      employmentStatus: String,
-      appointmentType: String,
-      startDate: String,
-      endDate: String,
-      isActive: Boolean,
-      isFirstAppointment: Boolean
-    }],
+  // 단과대학(원) 목록
+  colleges: {
+    type: [categorySchema],
     required: true
   },
 
-  // 대학별 배정 인원 (관리자 입력)
+  // 행정부서 목록
+  administrative: {
+    type: [categorySchema],
+    required: true
+  },
+
+  // 부서별 배정 인원 (관리자가 수동 입력)
+  // Key: "categoryName|mainDept", Value: 배정인원
   allocations: {
     type: Map,
     of: Number,
     default: {}
   },
 
-  // 대학별 재직 인원 (파싱된 데이터)
-  actualCounts: {
-    type: Map,
-    of: Number,
-    required: true
-  },
-
   // 전체 요약 정보
   summary: {
-    totalRecords: {
+    totalColleges: {
       type: Number,
       required: true
     },
-    totalActive: {
+    totalAdmin: {
       type: Number,
       required: true
     },
-    totalFirstAppointments: {
+    grandTotal: {
       type: Number,
       required: true
     }
@@ -95,17 +107,33 @@ assistantDataSchema.statics.updateData = async function(data) {
   // 기존 데이터 조회
   const existing = await this.findOne();
 
-  if (existing) {
-    // 기존 배정 인원 유지
-    data.allocations = existing.allocations || new Map();
+  if (existing && existing.allocations) {
+    // 기존 배정 인원 유지하고 새 데이터에 적용
+    data.allocations = existing.allocations;
   } else {
     // 초기 배정 인원 설정 (재직 인원과 동일하게)
     const allocationsMap = new Map();
-    if (data.actualCounts) {
-      data.actualCounts.forEach((count, college) => {
-        allocationsMap.set(college, count);
+
+    // colleges에서 배정인원 초기화
+    if (data.colleges) {
+      data.colleges.forEach(college => {
+        college.departments.forEach(dept => {
+          const key = `${college.categoryName}|${dept.mainDept}`;
+          allocationsMap.set(key, dept.current);
+        });
       });
     }
+
+    // administrative에서 배정인원 초기화
+    if (data.administrative) {
+      data.administrative.forEach(admin => {
+        admin.departments.forEach(dept => {
+          const key = `${admin.categoryName}|${dept.mainDept}`;
+          allocationsMap.set(key, dept.current);
+        });
+      });
+    }
+
     data.allocations = allocationsMap;
   }
 
@@ -125,31 +153,36 @@ assistantDataSchema.statics.updateAllocations = async function(allocations) {
     throw new Error('조교 데이터가 없습니다. 먼저 Excel 파일을 업로드해주세요.');
   }
 
-  latest.allocations = allocations;
+  // Map 객체로 변환
+  const allocationsMap = new Map();
+  Object.entries(allocations).forEach(([key, value]) => {
+    allocationsMap.set(key, Number(value));
+  });
+
+  latest.allocations = allocationsMap;
+
+  // 각 부서의 allocated 값도 업데이트
+  latest.colleges.forEach(college => {
+    college.departments.forEach(dept => {
+      const key = `${college.categoryName}|${dept.mainDept}`;
+      if (allocationsMap.has(key)) {
+        dept.allocated = allocationsMap.get(key);
+      }
+    });
+  });
+
+  latest.administrative.forEach(admin => {
+    admin.departments.forEach(dept => {
+      const key = `${admin.categoryName}|${dept.mainDept}`;
+      if (allocationsMap.has(key)) {
+        dept.allocated = allocationsMap.get(key);
+      }
+    });
+  });
+
   latest.updatedAt = new Date();
   await latest.save();
   return latest;
-};
-
-/**
- * 대학별 잔여 인원 계산
- */
-assistantDataSchema.methods.getRemainingByCollege = function() {
-  const remaining = {};
-
-  // 모든 대학 목록 수집
-  const allColleges = new Set();
-  this.actualCounts.forEach((count, college) => allColleges.add(college));
-  this.allocations.forEach((count, college) => allColleges.add(college));
-
-  // 잔여 인원 계산
-  allColleges.forEach(college => {
-    const allocated = this.allocations.get(college) || 0;
-    const actual = this.actualCounts.get(college) || 0;
-    remaining[college] = allocated - actual;
-  });
-
-  return remaining;
 };
 
 const AssistantData = mongoose.model('AssistantData', assistantDataSchema);

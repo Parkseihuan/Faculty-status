@@ -1304,7 +1304,7 @@ async function loadAssistantData() {
       throw new Error(result.error || '데이터 로드 실패');
     }
 
-    if (!result.data || !result.data.byCollege || Object.keys(result.data.byCollege).length === 0) {
+    if (!result.data || !result.data.colleges || !result.data.administrative) {
       if (editor) {
         editor.innerHTML = `
           <p class="info-text">조교 데이터가 없습니다.</p>
@@ -1347,46 +1347,77 @@ async function loadAssistantData() {
 }
 
 /**
- * 조교 배정 인원 편집기 표시
+ * 조교 배정 인원 편집기 표시 (계층 구조)
  */
 function displayAssistantAllocations() {
   const editor = document.getElementById('assistantAllocationEditor');
   const saveBtn = document.getElementById('saveAssistantAllocations');
 
-  if (!currentAssistantData || !currentAssistantData.byCollege) {
+  if (!currentAssistantData || !currentAssistantData.colleges || !currentAssistantData.administrative) {
     editor.innerHTML = '<p class="info-text">조교 데이터를 업로드하면 배정 인원 설정이 여기에 표시됩니다.</p>';
     saveBtn.classList.add('hidden');
     return;
   }
 
-  let html = '<div style="max-height: 500px; overflow-y: auto;">';
+  let html = '<div style="max-height: 600px; overflow-y: auto;">';
   html += '<table style="width: 100%; border-collapse: collapse; font-size: 14px;">';
   html += '<thead>';
   html += '<tr style="background-color: rgba(55, 53, 47, 0.04); border-bottom: 2px solid rgba(55, 53, 47, 0.16);">';
-  html += '<th style="padding: 12px; text-align: left;">대학/부서</th>';
-  html += '<th style="padding: 12px; text-align: center; width: 120px;">배정인원</th>';
-  html += '<th style="padding: 12px; text-align: center; width: 120px;">재직인원</th>';
-  html += '<th style="padding: 12px; text-align: center; width: 120px;">잔여인원</th>';
+  html += '<th style="padding: 12px; text-align: left;">구분</th>';
+  html += '<th style="padding: 12px; text-align: left;">부서</th>';
+  html += '<th style="padding: 12px; text-align: center; width: 100px;">배정인원</th>';
+  html += '<th style="padding: 12px; text-align: center; width: 100px;">재직인원</th>';
+  html += '<th style="padding: 12px; text-align: center; width: 100px;">잔여인원</th>';
   html += '</tr>';
   html += '</thead>';
   html += '<tbody>';
 
-  Object.entries(currentAssistantData.byCollege).forEach(([college, data]) => {
-    const allocated = data.allocated || 0;
-    const actual = data.actual || 0;
-    const remaining = data.remaining || 0;
-    const remainingColor = remaining >= 0 ? 'inherit' : '#d44c47';
+  // 단과대학(원)
+  html += '<tr style="background-color: rgba(68, 131, 97, 0.1);"><td colspan="5" style="padding: 8px; font-weight: 600;">단과대학(원)</td></tr>';
+  currentAssistantData.colleges.forEach(category => {
+    category.departments.forEach(dept => {
+      const key = `${category.categoryName}|${dept.mainDept}`;
+      const allocated = dept.allocated || 0;
+      const current = dept.current || 0;
+      const remaining = allocated - current;
+      const remainingColor = remaining >= 0 ? 'inherit' : '#d44c47';
 
-    html += '<tr style="border-bottom: 1px solid rgba(55, 53, 47, 0.09);">';
-    html += `<td style="padding: 12px;">${escapeHtml(college)}</td>`;
-    html += `<td style="padding: 12px; text-align: center;">`;
-    html += `<input type="number" class="allocation-input" data-college="${escapeHtml(college)}" `;
-    html += `value="${allocated}" min="0" `;
-    html += `style="width: 80px; padding: 6px; border: 1px solid rgba(55, 53, 47, 0.16); border-radius: 4px; text-align: center;">`;
-    html += `</td>`;
-    html += `<td style="padding: 12px; text-align: center;">${actual}</td>`;
-    html += `<td style="padding: 12px; text-align: center; color: ${remainingColor}; font-weight: 500;">${remaining}</td>`;
-    html += '</tr>';
+      html += '<tr style="border-bottom: 1px solid rgba(55, 53, 47, 0.09);">';
+      html += `<td style="padding: 10px; font-size: 13px;">${escapeHtml(category.categoryName)}</td>`;
+      html += `<td style="padding: 10px; font-size: 13px;">${escapeHtml(dept.mainDept)}</td>`;
+      html += `<td style="padding: 10px; text-align: center;">`;
+      html += `<input type="number" class="allocation-input" data-key="${escapeHtml(key)}" data-current="${current}" `;
+      html += `value="${allocated}" min="0" `;
+      html += `style="width: 70px; padding: 6px; border: 1px solid rgba(55, 53, 47, 0.16); border-radius: 4px; text-align: center;">`;
+      html += `</td>`;
+      html += `<td style="padding: 10px; text-align: center;">${current}</td>`;
+      html += `<td class="remaining-cell" style="padding: 10px; text-align: center; color: ${remainingColor}; font-weight: 500;">${remaining}</td>`;
+      html += '</tr>';
+    });
+  });
+
+  // 행정부서
+  html += '<tr style="background-color: rgba(68, 131, 97, 0.1);"><td colspan="5" style="padding: 8px; font-weight: 600;">행정부서</td></tr>';
+  currentAssistantData.administrative.forEach(category => {
+    category.departments.forEach(dept => {
+      const key = `${category.categoryName}|${dept.mainDept}`;
+      const allocated = dept.allocated || 0;
+      const current = dept.current || 0;
+      const remaining = allocated - current;
+      const remainingColor = remaining >= 0 ? 'inherit' : '#d44c47';
+
+      html += '<tr style="border-bottom: 1px solid rgba(55, 53, 47, 0.09);">';
+      html += `<td style="padding: 10px; font-size: 13px;">${escapeHtml(category.categoryName)}</td>`;
+      html += `<td style="padding: 10px; font-size: 13px;">${escapeHtml(dept.mainDept)}</td>`;
+      html += `<td style="padding: 10px; text-align: center;">`;
+      html += `<input type="number" class="allocation-input" data-key="${escapeHtml(key)}" data-current="${current}" `;
+      html += `value="${allocated}" min="0" `;
+      html += `style="width: 70px; padding: 6px; border: 1px solid rgba(55, 53, 47, 0.16); border-radius: 4px; text-align: center;">`;
+      html += `</td>`;
+      html += `<td style="padding: 10px; text-align: center;">${current}</td>`;
+      html += `<td class="remaining-cell" style="padding: 10px; text-align: center; color: ${remainingColor}; font-weight: 500;">${remaining}</td>`;
+      html += '</tr>';
+    });
   });
 
   html += '</tbody>';
@@ -1407,15 +1438,16 @@ function displayAssistantAllocations() {
  */
 function updateRemainingCounts() {
   document.querySelectorAll('.allocation-input').forEach(input => {
-    const college = input.getAttribute('data-college');
     const allocated = parseInt(input.value) || 0;
-    const actual = currentAssistantData.byCollege[college].actual || 0;
-    const remaining = allocated - actual;
+    const current = parseInt(input.getAttribute('data-current')) || 0;
+    const remaining = allocated - current;
 
     const row = input.closest('tr');
-    const remainingCell = row.querySelector('td:last-child');
-    remainingCell.textContent = remaining;
-    remainingCell.style.color = remaining >= 0 ? 'inherit' : '#d44c47';
+    const remainingCell = row.querySelector('.remaining-cell');
+    if (remainingCell) {
+      remainingCell.textContent = remaining;
+      remainingCell.style.color = remaining >= 0 ? 'inherit' : '#d44c47';
+    }
   });
 }
 
@@ -1432,8 +1464,8 @@ async function saveAssistantAllocations() {
     const allocations = {};
 
     document.querySelectorAll('.allocation-input').forEach(input => {
-      const college = input.getAttribute('data-college');
-      allocations[college] = parseInt(input.value) || 0;
+      const key = input.getAttribute('data-key');
+      allocations[key] = parseInt(input.value) || 0;
     });
 
     const response = await fetch(`${API_BASE_URL}/assistant/allocations`, {

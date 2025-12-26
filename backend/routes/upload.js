@@ -215,7 +215,9 @@ router.post('/appointment', authMiddleware, upload.single('file'), async (req, r
     const assistantParsedData = await assistantParser.parseFromFile(req.file.path);
 
     console.log('✅ 발령사항 파싱 완료 - 휴직:', appointmentParsedData.leave.length, '명');
-    console.log('✅ 조교 데이터 파싱 완료 - 재직:', assistantParsedData.assistants.length, '명');
+    console.log('✅ 조교 데이터 파싱 완료 - 총 인원:', assistantParsedData.summary.grandTotal, '명');
+    console.log('  - 단과대학(원):', assistantParsedData.summary.totalColleges, '명');
+    console.log('  - 행정부서:', assistantParsedData.summary.totalAdmin, '명');
 
     // MongoDB에 저장 (발령사항)
     const savedAppointmentData = await AppointmentData.updateData({
@@ -231,19 +233,10 @@ router.post('/appointment', authMiddleware, upload.single('file'), async (req, r
     console.log('✅ 발령사항 데이터 저장 완료:', savedAppointmentData._id);
 
     // MongoDB에 저장 (조교)
-    const actualCounts = new Map();
-    Object.entries(assistantParsedData.summary.byCollege).forEach(([college, count]) => {
-      actualCounts.set(college, count);
-    });
-
     const savedAssistantData = await AssistantData.updateData({
-      assistants: assistantParsedData.assistants,
-      actualCounts: actualCounts,
-      summary: {
-        totalRecords: assistantParsedData.summary.total,
-        totalActive: assistantParsedData.summary.active,
-        totalFirstAppointments: assistantParsedData.assistants.filter(a => a.isFirstAppointment).length
-      },
+      colleges: assistantParsedData.colleges,
+      administrative: assistantParsedData.administrative,
+      summary: assistantParsedData.summary,
       uploadInfo: {
         filename: req.file.originalname,
         uploadedAt: new Date(),
@@ -266,8 +259,11 @@ router.post('/appointment', authMiddleware, upload.single('file'), async (req, r
       message: '발령사항 및 조교 데이터가 성공적으로 업로드되었습니다.',
       stats: {
         leave: appointmentParsedData.leave.length,
-        assistants: assistantParsedData.assistants.length,
-        firstAppointments: assistantParsedData.assistants.filter(a => a.isFirstAppointment).length
+        assistants: {
+          totalColleges: assistantParsedData.summary.totalColleges,
+          totalAdmin: assistantParsedData.summary.totalAdmin,
+          grandTotal: assistantParsedData.summary.grandTotal
+        }
       },
       uploadedAt: savedAppointmentData.uploadInfo.uploadedAt
     });
